@@ -2,6 +2,11 @@
 
 ## To run the tool via pre-compiled binary:
 
+**Prereqs**:
+
+- Docker installed (via Rancher Desktop, for example)
+- Workshop Docker image built
+
 Navigate to the *binaries* folder above, click the binary for your OS/Architecture, and click on the **download raw file** icon at the top right of the screen. 
 
 Then, you can either copy the binary into your system path or to the local directory containing your workshop.
@@ -18,30 +23,48 @@ echo $PATH
 echo %PATH%
 ```
 
-The binary will look for the following environment variables. If you don't set them in your current shell, defaults will be set as below:
+## Launching a Hugo Server Container
 
-| Environment Variable | Default Setting      |
-| -------------------- | -------------------- |
-| DOCKER_IMAGE         | fortinet-hugo:latest |
-| HOST_PORT            | 1313                 |
-| CONTAINER_PORT       | 1313                 |
-| WATCH_DIR            | . (current directory)|
-
-
-*From your workshop directory, run:*
+In Linux or MacOS:
 
 ```
-mv docker-run-go-<OS>-<arch> docker-run-go
-./docker-run-go
+> mv docker-run-go-<OS>-<arch> docker-run-go
 
-(or)
+> ./docker-run-go launch-server \
+      --docker-image fortinet-hugo:latest \
+      --host-port 1313 \
+      --container-port 1313 \
+      --watch-dir .
+```
 
+In Windows:
+
+```
 C:\move docker-run-go-windows-<arch>.exe docker-run-go.exe
-C:\docker-run-go.exe
+
+C:\docker-run-go.exe launch-server \
+      --docker-image fortinet-hugo:latest \
+      --host-port 1313 \
+      --container-port 1313 \
+      --watch-dir .
 ```
 
+To see all other commands or get help:
 
-## To *build* the CLI tool:
+On Linux or MacOS:
+
+```
+> ./docker-run-go -h
+> ./docker-run-go launch-server -h
+```
+
+On Windows:
+
+```
+C:\docker-run-go.exe -h
+```
+
+## To build the CLI tool:
 
 **Prereqs**:
 
@@ -91,4 +114,38 @@ echo $PATH
 - In windows:
 ```
 echo %PATH%
+```
+
+## Some Useful Go Commands
+
+After adding a new dependency, run:
+
+```
+go get <package>
+go mod tidy
+```
+
+To update all packages to their latest versions:
+
+```
+go get -u ./...
+```
+
+Formatting:
+
+```
+go fmt ./...
+```
+
+Various function checks:
+
+```
+go vet ./...
+```
+
+Run all unit tests:
+
+```
+go clean -testcache
+go test ./..
 ```
