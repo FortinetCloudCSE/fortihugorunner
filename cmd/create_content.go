@@ -45,5 +45,6 @@ var createContentCmd = &cobra.Command{
 }
 
 func init() {
+        rootCmd.AddCommand(createContentCmd)
 	createContentCmd.Flags().String("docker-image", "mycontent-image:latest", "Docker image to use for creating content")
 }

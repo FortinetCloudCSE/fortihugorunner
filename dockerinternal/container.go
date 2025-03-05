@@ -2,11 +2,15 @@ package dockerinternal
 
 import (
 	"context"
+        "bytes"
+        "archive/tar"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
@@ -23,6 +27,91 @@ type ServerConfig struct {
 type ContentConfig struct {
 	DockerImage string
 	// Add other flags as needed.
+}
+
+func ensureImagePulled(cli client.ImageAPIClient, imageName string) error {
+        ctx := context.Background()
+
+        fmt.Printf("Ensuring frontend image %s is available...\n", imageName)
+
+        // Use the new `image.PullOptions` from `github.com/docker/docker/api/types/image`
+        out, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
+        if err != nil {
+                return fmt.Errorf("failed to pull frontend image: %w", err)
+        }
+        defer out.Close()
+
+        // Stream output to the console
+        _, err = io.Copy(os.Stdout, out)
+        if err != nil {
+                return fmt.Errorf("error reading image pull output: %w", err)
+        }
+
+        fmt.Println("Frontend image pulled successfully.")
+        return nil
+}
+
+// buildDockerImage builds the Docker image using the SDK
+func BuildDockerImage(cli *client.Client, imageName string, target string) error {
+
+        cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+        if err != nil {
+                panic(fmt.Errorf("failed to create Docker client: %w", err))
+        }
+
+        images := []string{
+                "docker/dockerfile:1.5-labs",
+                "docker.io/hugomods/hugo:std",
+        }
+
+        for _, img := range images {
+                if err := ensureImagePulled(cli, img); err != nil {
+                    panic(err)
+                }
+        }
+
+
+	// Create a tarball of the current directory (Docker build context)
+	tarBuffer, err := CreateTarball(".")
+	if err != nil {
+		return fmt.Errorf("error creating tarball: %w", err)
+	}
+
+	// Define build options
+	options := types.ImageBuildOptions{
+		Tags:       []string{imageName},
+		Dockerfile: "Dockerfile",
+		Target:     target,
+		Remove:     true,
+                Version:    types.BuilderBuildKit,
+                //CacheFrom: []string{"type=registry,ref=docker/dockerfile:1.5-labs"},
+                BuildArgs:  map[string]*string{
+                   "BUILDKIT_INLINE_CACHE": strPtr("1"),
+                   "DOCKER_BUILDKIT": strPtr("1"),
+                },
+	}
+
+	// Execute Docker build
+	ctx := context.Background()
+        _, err = cli.BuildCachePrune(ctx, types.BuildCachePruneOptions{})
+              
+	response, err := cli.ImageBuild(ctx, tarBuffer, options)
+	if err != nil {
+		return fmt.Errorf("error building image: %w", err)
+	}
+	defer response.Body.Close()
+
+	// Stream build output
+	_, err = io.Copy(os.Stdout, response.Body)
+	if err != nil {
+		return fmt.Errorf("error reading build output: %w", err)
+	}
+
+	return nil
+}
+
+func strPtr(s string) *string {
+        return &s
 }
 
 func StartContainer(ctx context.Context, cli *client.Client, cfg ServerConfig) (string, error) {
@@ -109,4 +198,49 @@ func StopAndRemoveContainer(cli *client.Client, containerID string) {
 	if err := cli.ContainerRemove(context.Background(), containerID, container.RemoveOptions{Force: true}); err != nil {
 		fmt.Printf("Error removing container %s: %v\n", containerID, err)
 	}
+}
+
+// createTarball creates a tar archive of the given directory
+func CreateTarball(dir string) (io.Reader, error) {
+	buf := new(bytes.Buffer)
+	tw := tar.NewWriter(buf)
+	defer tw.Close()
+
+	err := filepath.Walk(dir, func(file string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories
+		if fi.IsDir() {
+			return nil
+		}
+
+		// Open the file
+		f, err := os.Open(file)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		// Write file header
+		header, err := tar.FileInfoHeader(fi, file)
+		if err != nil {
+			return err
+		}
+		header.Name = file // Preserve file path
+		if err := tw.WriteHeader(header); err != nil {
+			return err
+		}
+
+		// Copy file data to the tar writer
+		_, err = io.Copy(tw, f)
+		return err
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes.NewReader(buf.Bytes()), nil
 }

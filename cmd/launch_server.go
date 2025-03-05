@@ -69,6 +69,7 @@ var launchServerCmd = &cobra.Command{
 }
 
 func init() {
+        rootCmd.AddCommand(launchServerCmd)
 	launchServerCmd.Flags().String("docker-image", "fortinet-hugo:latest", "Docker image to use")
 	launchServerCmd.Flags().String("host-port", "1313", "Host port to expose")
 	launchServerCmd.Flags().String("container-port", "1313", "Container port to expose")

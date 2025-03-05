@@ -22,6 +22,24 @@ echo $PATH
 ```
 echo %PATH%
 ```
+## Building the Hugo Server Image
+
+In Linux or MacOS:
+
+```bash
+./docker-run-go build-image admin-dev     #builds an image for testing (hugotester:latest)
+
+./docker-run-go build-image author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
+```
+
+In Windows:
+
+```bash
+C:\\docker-run-go.exe build-image admin-dev     #builds an image for testing (hugotester:latest)
+
+C:\\docker-run-go.exe build-image author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
+```
+
 
 ## Launching a Hugo Server Container
 
