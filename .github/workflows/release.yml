@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers only on version tags
+
+jobs:
+  build:
+    name: Build and Release Binaries
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: 386
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'  # Change as needed
+
+      - name: Build binary
+        run: |
+          BIN_NAME="docker-run-go-${{ matrix.goos }}-${{ matrix.goarch }}"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            BIN_NAME="${BIN_NAME}.exe"
+          fi
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o "$BIN_NAME"
+
+      - name: Upload binary to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: docker-run-go-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
