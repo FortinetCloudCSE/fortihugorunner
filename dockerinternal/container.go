@@ -52,7 +52,14 @@ func ensureImagePulled(cli client.ImageAPIClient, imageName string) error {
 }
 
 // buildDockerImage builds the Docker image using the SDK
-func BuildDockerImage(cli *client.Client, imageName string, target string) error {
+func BuildDockerImage(cli *client.Client, imageName string, target string, envArg string) error {
+
+	branchMap := map[string]string{
+		"admin-dev":  "prreviewJune23",
+		"author-dev": "main",
+	}
+
+	branchWorking := branchMap[envArg]
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -106,6 +113,8 @@ func BuildDockerImage(cli *client.Client, imageName string, target string) error
 		return fmt.Errorf("error reading build output: %w", err)
 	}
 
+	fmt.Println("Image built with CentralRepo branch: ", branchWorking)
+     
 	return nil
 }
 

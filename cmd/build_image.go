@@ -49,7 +49,7 @@ Example:
 		}
 
 		// Build the Docker image
-		err = dockerinternal.BuildDockerImage(cli, containerName, env)
+		err = dockerinternal.BuildDockerImage(cli, containerName, env, envArg)
 		if err != nil {
 			fmt.Printf("Error building Docker image: %v\n", err)
 			os.Exit(1)
