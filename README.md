@@ -4,7 +4,7 @@
 
 **Prereqs**:
 
-- Docker installed (via Rancher Desktop, for example)
+- Docker installed (via Rancher Desktop, for example) and running
 
 Navigate to the [releases](https://github.com/FortinetCloudCSE/docker-run-go/releases) page and right click the binary for your OS/Architecture, click "Save Link As...", and choose your preferred download location.
 

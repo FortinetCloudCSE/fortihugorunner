@@ -114,7 +114,7 @@ func BuildDockerImage(cli *client.Client, imageName string, target string, envAr
 	}
 
 	fmt.Println("Image built with CentralRepo branch: ", branchWorking)
-     
+
 	return nil
 }
 
