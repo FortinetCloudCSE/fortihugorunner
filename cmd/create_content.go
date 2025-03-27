@@ -7,7 +7,6 @@ import (
 
 	"docker-run-go/dockerinternal"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )
 
@@ -19,11 +18,6 @@ var createContentCmd = &cobra.Command{
 			DockerImage: getFlagString(cmd, "docker-image"),
 		}
 		ctx := context.Background()
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err != nil {
-			fmt.Printf("Error creating Docker client: %v\n", err)
-			os.Exit(1)
-		}
 
 		// Example: run a container with a different command.
 		containerConfig := &container.Config{
@@ -31,12 +25,12 @@ var createContentCmd = &cobra.Command{
 			Cmd:   []string{"create", "content"},
 			Tty:   true,
 		}
-		created, err := cli.ContainerCreate(ctx, containerConfig, nil, nil, nil, "")
+		created, err := dockerClient.ContainerCreate(ctx, containerConfig, nil, nil, nil, "")
 		if err != nil {
 			fmt.Printf("Error creating container: %v\n", err)
 			os.Exit(1)
 		}
-		if err := cli.ContainerStart(ctx, created.ID, container.StartOptions{}); err != nil {
+		if err := dockerClient.ContainerStart(ctx, created.ID, container.StartOptions{}); err != nil {
 			fmt.Printf("Error starting container: %v\n", err)
 			os.Exit(1)
 		}

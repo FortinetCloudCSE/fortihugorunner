@@ -17,6 +17,11 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+type DockerClient interface {
+        client.ImageAPIClient
+        client.ContainerAPIClient
+}
+
 type ServerConfig struct {
 	DockerImage   string
 	HostPort      string
@@ -29,7 +34,7 @@ type ContentConfig struct {
 	// Add other flags as needed.
 }
 
-func ensureImagePulled(cli client.ImageAPIClient, imageName string) error {
+func ensureImagePulled(cli DockerClient, imageName string) error {
 	ctx := context.Background()
 
 	fmt.Printf("Ensuring frontend image %s is available...\n", imageName)
@@ -52,7 +57,7 @@ func ensureImagePulled(cli client.ImageAPIClient, imageName string) error {
 }
 
 // buildDockerImage builds the Docker image using the SDK
-func BuildDockerImage(cli *client.Client, imageName string, target string, envArg string) error {
+func BuildDockerImage(cli DockerClient, imageName string, target string, envArg string) error {
 
 	branchMap := map[string]string{
 		"admin-dev":  "prreviewJune23",
@@ -61,10 +66,10 @@ func BuildDockerImage(cli *client.Client, imageName string, target string, envAr
 
 	branchWorking := branchMap[envArg]
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		panic(fmt.Errorf("failed to create Docker client: %w", err))
-	}
+	//cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	//if err != nil {
+	//	panic(fmt.Errorf("failed to create Docker client: %w", err))
+	//}
 
 	images := []string{
 		"docker/dockerfile:1.5-labs",
@@ -122,7 +127,7 @@ func strPtr(s string) *string {
 	return &s
 }
 
-func StartContainer(ctx context.Context, cli *client.Client, cfg ServerConfig) (string, error) {
+func StartContainer(ctx context.Context, cli DockerClient, cfg ServerConfig) (string, error) {
 	// Adjust the path for mounting.
 	userRepoPath := AdjustPathForDocker(cfg.WatchDir)
 	mounts := []mount.Mount{
@@ -147,7 +152,7 @@ func StartContainer(ctx context.Context, cli *client.Client, cfg ServerConfig) (
 
 	containerConfig := &container.Config{
 		Image: cfg.DockerImage,
-		Cmd:   []string{"server", "--bind", "0.0.0.0", "--liveReload", "--disableFastRender", "--poll"},
+		Cmd:   []string{"server", "--bind", "0.0.0.0"},
 		Tty:   true,
 		ExposedPorts: nat.PortSet{
 			nat.Port(cfg.ContainerPort + "/tcp"): struct{}{},
@@ -176,7 +181,7 @@ func StartContainer(ctx context.Context, cli *client.Client, cfg ServerConfig) (
 	return created.ID, nil
 }
 
-func AttachContainer(ctx context.Context, cli *client.Client, containerID string) error {
+func AttachContainer(ctx context.Context, cli DockerClient, containerID string) error {
 	opts := container.AttachOptions{
 		Stream: true,
 		Stdout: true,
@@ -196,7 +201,7 @@ func AttachContainer(ctx context.Context, cli *client.Client, containerID string
 	return nil
 }
 
-func StopAndRemoveContainer(cli *client.Client, containerID string) {
+func StopAndRemoveContainer(cli DockerClient, containerID string) {
 	fmt.Printf("Stopping container: %s\n", containerID)
 	timeout := 10
 	stopOpts := container.StopOptions{Timeout: &timeout}

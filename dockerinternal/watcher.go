@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/client"
+	//"github.com/docker/docker/client"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -41,7 +41,7 @@ func IsWSL2() bool {
 	return isWSL && runtime.GOOS == "linux"
 }
 
-func WatchAndRestart(ctx context.Context, cli *client.Client, cfg ServerConfig, containerID *string) {
+func WatchAndRestart(ctx context.Context, cli DockerClient, cfg ServerConfig, containerID *string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		fmt.Printf("Error creating file watcher: %v\n", err)

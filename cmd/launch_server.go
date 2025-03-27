@@ -9,7 +9,6 @@ import (
 	"syscall"
 
 	"docker-run-go/dockerinternal"
-	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )
 
@@ -36,19 +35,14 @@ var launchServerCmd = &cobra.Command{
 		}
 
 		ctx := context.Background()
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err != nil {
-			fmt.Printf("Error creating Docker client: %v\n", err)
-			os.Exit(1)
-		}
 
-		containerID, err := dockerinternal.StartContainer(ctx, cli, cfg)
+		containerID, err := dockerinternal.StartContainer(ctx, dockerClient, cfg)
 		if err != nil {
 			fmt.Printf("Error starting container: %v\n", err)
 			os.Exit(1)
 		}
 
-		if err := dockerinternal.AttachContainer(ctx, cli, containerID); err != nil {
+		if err := dockerinternal.AttachContainer(ctx, dockerClient, containerID); err != nil {
 			fmt.Printf("Error attaching container: %v\n", err)
 			os.Exit(1)
 		}
@@ -59,12 +53,12 @@ var launchServerCmd = &cobra.Command{
 		go func() {
 			<-sigChan
 			fmt.Println("\nReceived shutdown signal. Stopping container.")
-			dockerinternal.StopAndRemoveContainer(cli, containerID)
+			dockerinternal.StopAndRemoveContainer(dockerClient, containerID)
 			os.Exit(0)
 		}()
 
 		// Start file watcher.
-		dockerinternal.WatchAndRestart(ctx, cli, cfg, &containerID)
+		dockerinternal.WatchAndRestart(ctx, dockerClient, cfg, &containerID)
 	},
 }
 

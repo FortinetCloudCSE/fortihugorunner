@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"docker-run-go/dockerinternal"
-	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )
 
@@ -41,15 +40,8 @@ Example:
 		}
 		containerName := containerMap[env]
 
-		// Initialize Docker client
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-		if err != nil {
-			fmt.Printf("Error creating Docker client: %v\n", err)
-			os.Exit(1)
-		}
-
 		// Build the Docker image
-		err = dockerinternal.BuildDockerImage(cli, containerName, env, envArg)
+		err := dockerinternal.BuildDockerImage(dockerClient, containerName, env, envArg)
 		if err != nil {
 			fmt.Printf("Error building Docker image: %v\n", err)
 			os.Exit(1)
