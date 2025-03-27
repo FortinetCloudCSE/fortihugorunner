@@ -34,7 +34,7 @@ type ContentConfig struct {
 	// Add other flags as needed.
 }
 
-func ensureImagePulled(cli DockerClient, imageName string) error {
+func EnsureImagePulled(cli DockerClient, imageName string) error {
 	ctx := context.Background()
 
 	fmt.Printf("Ensuring frontend image %s is available...\n", imageName)
