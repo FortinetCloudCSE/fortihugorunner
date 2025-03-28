@@ -13,14 +13,8 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
-
-type DockerClient interface {
-        client.ImageAPIClient
-        client.ContainerAPIClient
-}
 
 type ServerConfig struct {
 	DockerImage   string
@@ -31,7 +25,6 @@ type ServerConfig struct {
 
 type ContentConfig struct {
 	DockerImage string
-	// Add other flags as needed.
 }
 
 func EnsureImagePulled(cli DockerClient, imageName string) error {
@@ -39,7 +32,6 @@ func EnsureImagePulled(cli DockerClient, imageName string) error {
 
 	fmt.Printf("Ensuring frontend image %s is available...\n", imageName)
 
-	// Use the new `image.PullOptions` from `github.com/docker/docker/api/types/image`
 	out, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to pull frontend image: %w", err)
@@ -66,18 +58,13 @@ func BuildDockerImage(cli DockerClient, imageName string, target string, envArg 
 
 	branchWorking := branchMap[envArg]
 
-	//cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	//if err != nil {
-	//	panic(fmt.Errorf("failed to create Docker client: %w", err))
-	//}
-
 	images := []string{
 		"docker/dockerfile:1.5-labs",
 		"docker.io/hugomods/hugo:std",
 	}
 
 	for _, img := range images {
-		if err := ensureImagePulled(cli, img); err != nil {
+		if err := EnsureImagePulled(cli, img); err != nil {
 			panic(err)
 		}
 	}
@@ -95,7 +82,6 @@ func BuildDockerImage(cli DockerClient, imageName string, target string, envArg 
 		Target:     target,
 		Remove:     true,
 		Version:    types.BuilderBuildKit,
-		//CacheFrom: []string{"type=registry,ref=docker/dockerfile:1.5-labs"},
 		BuildArgs: map[string]*string{
 			"BUILDKIT_INLINE_CACHE": strPtr("1"),
 			"DOCKER_BUILDKIT":       strPtr("1"),

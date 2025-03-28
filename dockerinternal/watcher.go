@@ -8,8 +8,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
-	//"github.com/docker/docker/client"
 	"github.com/fsnotify/fsnotify"
 )
 

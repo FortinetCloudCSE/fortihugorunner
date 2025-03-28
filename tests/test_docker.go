@@ -2,8 +2,6 @@ package dockerinternal_test
 
 import (
     "context"
-    "errors"
-    "strings"
     "testing"
     "github.com/stretchr/testify/assert"
     "github.com/stretchr/testify/require"
