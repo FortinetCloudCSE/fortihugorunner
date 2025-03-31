@@ -9,7 +9,8 @@ import (
 )
 
 // buildImageCmd represents the `build-image` command using Docker SDK
-var buildImageCmd = &cobra.Command{
+func newBuildImageCmd(cli dockerinternal.DockerClient) *cobra.Command {
+   return &cobra.Command{
 	Use:   "build-image [author-dev | admin-dev]",
 	Short: "Builds a Docker image programmatically using the Docker SDK",
 	Long: `Builds a Docker image with the specified environment.
@@ -49,8 +50,14 @@ Example:
 
 		fmt.Printf("**** Built a %s container named: %s ****\n", envArg, containerName)
 	},
+     }
 }
 
 func init() {
-	rootCmd.AddCommand(buildImageCmd)
+	rootCmd.AddCommand(newBuildImageCmd(dockerClient))
 }
+
+func NewTestableBuildImageCmd(cli dockerinternal.DockerClient) *cobra.Command {
+	return newBuildImageCmd(cli)
+}
+
