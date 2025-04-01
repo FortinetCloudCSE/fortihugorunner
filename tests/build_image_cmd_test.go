@@ -26,22 +26,21 @@ func TestBuildImageCmd(t *testing.T) {
 			args:         []string{"author-dev"},
 			mockClient:   &mockdocker.MockDockerClient{},
 			expectErr:    false,
-			//expectOutput: "**** Built a author-dev container named: fortinet-hugo ****",
-                        expectOutput: "",
+			expectOutput: "**** Built a author-dev container named: fortinet-hugo ****",
 		},
 		{
 			name:         "invalid environment arg",
 			args:         []string{"wrong-env"},
 			mockClient:   &mockdocker.MockDockerClient{},
 			expectErr:    true,
-			expectOutput: "Usage: docker-run-go build-image",
+			expectOutput: "Usage: docker-run-go build-image [author-dev | admin-dev]",
 		},
 		{
 			name:         "image pull fails",
 			args:         []string{"admin-dev"},
 			mockClient:   &mockdocker.MockDockerClient{FailPull: true},
 			expectErr:    true,
-			expectOutput: "failed to pull image",
+			expectOutput: "Couldn't pull required image, exiting....",
 		},
 		{
 			name:         "build fails",
@@ -63,11 +62,11 @@ func TestBuildImageCmd(t *testing.T) {
 			cmd.SetOut(buf)
 			cmd.SetErr(buf)
 			cmd.SetArgs(tc.args)
-
 			err := cmd.Execute()
 
 			output := buf.String()
                         fmt.Printf("Output of test function: \n%s", output)
+                        fmt.Printf("tc.expectOutput: \n%s\n", tc.expectOutput)
 			if tc.expectErr {
 				assert.Error(t, err)
 				assert.Contains(t, output, tc.expectOutput)

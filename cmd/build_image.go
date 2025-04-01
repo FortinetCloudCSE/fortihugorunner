@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+	//"os"
 
 	"docker-run-go/dockerinternal"
 	"github.com/spf13/cobra"
@@ -20,7 +20,8 @@ Example:
   docker-run-go build-image admin-dev
 `,
 	Args: cobra.ExactArgs(1), // Require exactly one argument
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+                
 		envArg := args[0]
 
 		// Map provided argument to actual Docker build target
@@ -30,8 +31,9 @@ Example:
 		}
 		env, exists := envMap[envArg]
 		if !exists {
-			fmt.Println("Usage: docker-run-go build-image [author-dev | admin-dev]")
-			os.Exit(1)
+                        errString := fmt.Sprintf("Usage: docker-run-go build-image [author-dev | admin-dev]")
+			cmd.Println(errString)
+			return fmt.Errorf(errString)
 		}
 
 		// Determine the corresponding container name
@@ -44,12 +46,13 @@ Example:
 		// Build the Docker image
 		err := dockerinternal.BuildDockerImage(cli, containerName, env, envArg)
 		if err != nil {
-			fmt.Printf("Error building Docker image: %v\n", err)
-			os.Exit(1)
+			cmd.Printf("Error building Docker image: %v\n", err)
+			return err
 		}
 
                 printString := fmt.Sprintf("**** Built a %s container named: %s ****\n", envArg, containerName)
-		fmt.Printf(printString)
+		cmd.Println(printString)
+                return nil
 	},
      }
 }

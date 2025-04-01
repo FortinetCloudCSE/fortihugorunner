@@ -31,9 +31,9 @@ func EnsureImagePulled(cli DockerClient, imageName string) error {
 	ctx := context.Background()
 
 	fmt.Printf("Ensuring frontend image %s is available...\n", imageName)
-
+        
+        fmt.Printf("Using client %T in EnsureImagePulled...\n", cli)
 	out, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
-        fmt.Printf("ImagePull returned: out = %#v, err = %v\n", out, err)
 	if err != nil {
 		return fmt.Errorf("failed to pull frontend image: %w", err)
 	}
@@ -52,6 +52,7 @@ func EnsureImagePulled(cli DockerClient, imageName string) error {
 // buildDockerImage builds the Docker image using the SDK
 func BuildDockerImage(cli DockerClient, imageName string, target string, envArg string) error {
 
+        fmt.Printf("Using client %T in BuildDockerImage...\n", cli)
 	branchMap := map[string]string{
 		"admin-dev":  "prreviewJune23",
 		"author-dev": "main",
@@ -66,10 +67,12 @@ func BuildDockerImage(cli DockerClient, imageName string, target string, envArg 
 
 	for _, img := range images {
 		if err := EnsureImagePulled(cli, img); err != nil {
-			panic(err)
+			//panic(err)
+                        fmt.Printf("Error pulling image %s", imageName)
+                        return fmt.Errorf("Couldn't pull required image, exiting....")
 		}
 	}
-
+        
 	// Create a tarball of the current directory (Docker build context)
 	tarBuffer, err := CreateTarball(".")
 	if err != nil {
