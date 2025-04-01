@@ -42,13 +42,14 @@ Example:
 		containerName := containerMap[env]
 
 		// Build the Docker image
-		err := dockerinternal.BuildDockerImage(dockerClient, containerName, env, envArg)
+		err := dockerinternal.BuildDockerImage(cli, containerName, env, envArg)
 		if err != nil {
 			fmt.Printf("Error building Docker image: %v\n", err)
 			os.Exit(1)
 		}
 
-		fmt.Printf("**** Built a %s container named: %s ****\n", envArg, containerName)
+                printString := fmt.Sprintf("**** Built a %s container named: %s ****\n", envArg, containerName)
+		fmt.Printf(printString)
 	},
      }
 }

@@ -33,6 +33,7 @@ func EnsureImagePulled(cli DockerClient, imageName string) error {
 	fmt.Printf("Ensuring frontend image %s is available...\n", imageName)
 
 	out, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
+        fmt.Printf("ImagePull returned: out = %#v, err = %v\n", out, err)
 	if err != nil {
 		return fmt.Errorf("failed to pull frontend image: %w", err)
 	}
