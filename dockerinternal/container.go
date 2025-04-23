@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -22,11 +24,34 @@ type ServerConfig struct {
 	HostPort      string
 	ContainerPort string
 	WatchDir      string
+	MountHugo     bool
 }
 
 type ContentConfig struct {
 	DockerImage string
 	// Add other flags as needed.
+}
+
+func extractBranchByStage(dockerfile string, stage string) (string, error) {
+	lines := strings.Split(dockerfile, "\n")
+
+	stageHeader := fmt.Sprintf("FROM base as %s", stage)
+	inTargetStage := false
+	re := regexp.MustCompile(`(?i)^ADD\s+https?://[^#]+#([^ \n]+)`)
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(strings.ToUpper(line), "FROM ") {
+			inTargetStage = strings.EqualFold(line, stageHeader)
+		}
+		if inTargetStage {
+			if match := re.FindStringSubmatch(line); match != nil {
+				return match[1], nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("no branch found in Dockerfile")
 }
 
 func ensureImagePulled(cli client.ImageAPIClient, imageName string) error {
@@ -52,23 +77,25 @@ func ensureImagePulled(cli client.ImageAPIClient, imageName string) error {
 }
 
 // buildDockerImage builds the Docker image using the SDK
-func BuildDockerImage(cli *client.Client, imageName string, target string, envArg string) error {
+func BuildDockerImage(cli *client.Client, imageName string, target string, envArg string, hugoVersion string) error {
 
-	branchMap := map[string]string{
-		"admin-dev":  "prreviewJune23",
-		"author-dev": "main",
+	content, err := os.ReadFile("Dockerfile")
+	if err != nil {
+		return fmt.Errorf("Can't find Dockerfile...")
+	}
+	branchWorking, err := extractBranchByStage(string(content), target)
+	if err != nil {
+		return fmt.Errorf("Branch not found: %w", err)
 	}
 
-	branchWorking := branchMap[envArg]
-
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err = client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		panic(fmt.Errorf("failed to create Docker client: %w", err))
 	}
 
 	images := []string{
 		"docker/dockerfile:1.5-labs",
-		"docker.io/hugomods/hugo:std",
+		"docker.io/hugomods/hugo:" + hugoVersion,
 	}
 
 	for _, img := range images {
@@ -134,16 +161,18 @@ func StartContainer(ctx context.Context, cli *client.Client, cfg ServerConfig) (
 	}
 
 	// Mount the Hugo configuration file.
-	configPath := filepath.Join(cfg.WatchDir, "hugo.toml")
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		fmt.Printf("Warning: Hugo config file not found at %s. The container may exit if Hugo requires it.\n", configPath)
+	if cfg.MountHugo == true {
+		configPath := filepath.Join(cfg.WatchDir, "hugo.toml")
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			fmt.Printf("Warning: Hugo config file not found at %s. The container may exit if Hugo requires it.\n", configPath)
+		}
+		centralRepoPath := AdjustPathForDocker(configPath)
+		mounts = append(mounts, mount.Mount{
+			Type:   mount.TypeBind,
+			Source: centralRepoPath,
+			Target: "/home/CentralRepo/hugo.toml",
+		})
 	}
-	centralRepoPath := AdjustPathForDocker(configPath)
-	mounts = append(mounts, mount.Mount{
-		Type:   mount.TypeBind,
-		Source: centralRepoPath,
-		Target: "/home/CentralRepo/hugo.toml",
-	})
 
 	containerConfig := &container.Config{
 		Image: cfg.DockerImage,

@@ -29,9 +29,9 @@ In Linux or MacOS:
 ```bash
 > mv docker-run-go-<OS>-<arch> docker-run-go
 
-> ./docker-run-go build-image admin-dev     #builds an image for testing (hugotester:latest)
+> ./docker-run-go build-image --env admin-dev     #builds an image for testing (hugotester:latest)
 
-> ./docker-run-go build-image author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
+> ./docker-run-go build-image --env author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
 ```
 
 **Note: If binary is located in your system path, omit './' when running the commands throughout this document.**
@@ -41,9 +41,9 @@ In Windows:
 ```bash
 C:\\move docker-run-go-windows-<arch>.exe docker-run-go.exe
 
-C:\\docker-run-go.exe build-image admin-dev     #builds an image for testing (hugotester:latest)
+C:\\docker-run-go.exe build-image --env admin-dev     #builds an image for testing (hugotester:latest)
 
-C:\\docker-run-go.exe build-image author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
+C:\\docker-run-go.exe build-image --env author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
 ```
 
 
@@ -56,7 +56,8 @@ In Linux or MacOS:
       --docker-image fortinet-hugo:latest \
       --host-port 1313 \
       --container-port 1313 \
-      --watch-dir .
+      --watch-dir . \
+      --mount-hugo
 ```
 
 In Windows:
@@ -66,7 +67,8 @@ C:\\docker-run-go.exe launch-server \
       --docker-image fortinet-hugo:latest \
       --host-port 1313 \
       --container-port 1313 \
-      --watch-dir .
+      --watch-dir . \
+      --mount-hugo
 ```
 
 To see all other commands or get help:

@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.3.0] - 2025-04-23
+### Added
+- `--mount-hugo` flag in launch-server command to specify hugo.toml mount behavior
+- Logic to retrieve CentralRepo branch directly from Dockerfile
+- `--hugo-version` flag in build-image command to specify Hugo version
+
 ## [v0.2.0] - 2025-03-20
 ### Added
 - `--version` flag to check the current CLI version

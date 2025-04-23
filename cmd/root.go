@@ -1,7 +1,7 @@
 package cmd
 
 import (
-        "context"
+	"context"
 	"docker-run-go/version"
 	"fmt"
 	"github.com/docker/docker/client"
@@ -17,14 +17,14 @@ var rootCmd = &cobra.Command{
 	Long:  "Includes functions for facilitating Hugo app development with docker containers.",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		err := checkDockerRunning()
-                if err != nil {
-                        cmd.SilenceErrors = true
-                        cmd.SilenceUsage = true
-                        fmt.Fprintf(os.Stderr, "\nReceived the error below. For troubleshooting help, head here: https://docs.docker.com/engine/daemon/troubleshoot/\n\n")
-                        return err
-                }
-                return nil
-                
+		if err != nil {
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+			fmt.Fprintf(os.Stderr, "\nReceived the error below. For troubleshooting help, head here: https://docs.docker.com/engine/daemon/troubleshoot/\n\n")
+			return err
+		}
+		return nil
+
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if rootVersion {

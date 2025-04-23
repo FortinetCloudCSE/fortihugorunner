@@ -18,6 +18,11 @@ func getFlagString(cmd *cobra.Command, flagName string) string {
 	return value
 }
 
+func getFlagBool(cmd *cobra.Command, flagName string) bool {
+	value, _ := cmd.Flags().GetBool(flagName)
+	return value
+}
+
 var launchServerCmd = &cobra.Command{
 	Use:   "launch-server",
 	Short: "Launch the Hugo server container",
@@ -27,6 +32,7 @@ var launchServerCmd = &cobra.Command{
 			HostPort:      getFlagString(cmd, "host-port"),
 			ContainerPort: getFlagString(cmd, "container-port"),
 			WatchDir:      getFlagString(cmd, "watch-dir"),
+			MountHugo:     getFlagBool(cmd, "mount-hugo"),
 		}
 
 		// Ensure the watch directory is absolute.
@@ -74,4 +80,5 @@ func init() {
 	launchServerCmd.Flags().String("host-port", "1313", "Host port to expose")
 	launchServerCmd.Flags().String("container-port", "1313", "Container port to expose")
 	launchServerCmd.Flags().String("watch-dir", ".", "Directory to watch for file changes")
+	launchServerCmd.Flags().Bool("mount-hugo", false, "Mount the hugo.toml in your workshop directory and watch for updates. (Default is false)")
 }

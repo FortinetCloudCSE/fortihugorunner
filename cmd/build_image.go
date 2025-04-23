@@ -11,7 +11,7 @@ import (
 
 // buildImageCmd represents the `build-image` command using Docker SDK
 var buildImageCmd = &cobra.Command{
-	Use:   "build-image [author-dev | admin-dev]",
+	Use:   "build-image",
 	Short: "Builds a Docker image programmatically using the Docker SDK",
 	Long: `Builds a Docker image with the specified environment.
 
@@ -19,9 +19,11 @@ Example:
   docker-run-go build-image author-dev
   docker-run-go build-image admin-dev
 `,
-	Args: cobra.ExactArgs(1), // Require exactly one argument
+	//Args: cobra.ExactArgs(1), // Require exactly one argument
 	Run: func(cmd *cobra.Command, args []string) {
-		envArg := args[0]
+		//envArg := args[0]
+		envArg, _ := cmd.Flags().GetString("env")
+		hugoVersion, _ := cmd.Flags().GetString("hugo-version")
 
 		// Map provided argument to actual Docker build target
 		envMap := map[string]string{
@@ -30,7 +32,7 @@ Example:
 		}
 		env, exists := envMap[envArg]
 		if !exists {
-			fmt.Println("Usage: docker-run-go build-image [author-dev | admin-dev]")
+			fmt.Println("Error: env must be one of either author-dev or admin-dev.")
 			os.Exit(1)
 		}
 
@@ -49,7 +51,7 @@ Example:
 		}
 
 		// Build the Docker image
-		err = dockerinternal.BuildDockerImage(cli, containerName, env, envArg)
+		err = dockerinternal.BuildDockerImage(cli, containerName, env, envArg, hugoVersion)
 		if err != nil {
 			fmt.Printf("Error building Docker image: %v\n", err)
 			os.Exit(1)
@@ -61,4 +63,6 @@ Example:
 
 func init() {
 	rootCmd.AddCommand(buildImageCmd)
+	buildImageCmd.Flags().String("env", "author-dev", "Environment. author-dev (prod) creates a fortinet-hugo image. admin-dev (dev) creates a hugotester image.")
+	buildImageCmd.Flags().String("hugo-version", "0.145.0", "Hugo version.")
 }
