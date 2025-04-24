@@ -24,7 +24,7 @@ type ServerConfig struct {
 	HostPort      string
 	ContainerPort string
 	WatchDir      string
-	MountHugo     bool
+	MountToml     bool
 }
 
 type ContentConfig struct {
@@ -161,7 +161,7 @@ func StartContainer(ctx context.Context, cli *client.Client, cfg ServerConfig) (
 	}
 
 	// Mount the Hugo configuration file.
-	if cfg.MountHugo == true {
+	if cfg.MountToml == true {
 		configPath := filepath.Join(cfg.WatchDir, "hugo.toml")
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
 			fmt.Printf("Warning: Hugo config file not found at %s. The container may exit if Hugo requires it.\n", configPath)
@@ -176,7 +176,7 @@ func StartContainer(ctx context.Context, cli *client.Client, cfg ServerConfig) (
 
 	containerConfig := &container.Config{
 		Image: cfg.DockerImage,
-		Cmd:   []string{"server", "--bind", "0.0.0.0", "--liveReload", "--disableFastRender", "--poll"},
+		Cmd:   []string{"server", "--bind", "0.0.0.0"},
 		Tty:   true,
 		ExposedPorts: nat.PortSet{
 			nat.Port(cfg.ContainerPort + "/tcp"): struct{}{},

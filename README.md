@@ -57,7 +57,7 @@ In Linux or MacOS:
       --host-port 1313 \
       --container-port 1313 \
       --watch-dir . \
-      --mount-hugo
+      --mount-toml
 ```
 
 In Windows:
@@ -68,7 +68,7 @@ C:\\docker-run-go.exe launch-server \
       --host-port 1313 \
       --container-port 1313 \
       --watch-dir . \
-      --mount-hugo
+      --mount-toml
 ```
 
 To see all other commands or get help:

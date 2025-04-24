@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.3.1] - 2025-04-24
+### Fixed
+- Changed flag `--mount-hugo` to `--mount-toml` in launch-server command
+- Removed auto-update flags in 'hugo server' wrapper
+
 ## [v0.3.0] - 2025-04-23
 ### Added
 - `--mount-hugo` flag in launch-server command to specify hugo.toml mount behavior
