@@ -26,6 +26,16 @@ func getFlagBool(cmd *cobra.Command, flagName string) bool {
 var launchServerCmd = &cobra.Command{
 	Use:   "launch-server",
 	Short: "Launch the Hugo server container",
+	Long: `Launch the Hugo server container based on specified image and other parameters.
+
+Example:
+  ./docker-run-go launch-server \
+      --docker-image fortinet-hugo:latest \
+      --host-port 1313 \
+      --container-port 1313 \
+      --watch-dir . \
+      --mount-toml
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg := dockerinternal.ServerConfig{
 			DockerImage:   getFlagString(cmd, "docker-image"),

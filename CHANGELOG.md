@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.3.2] - 2025-05-13
+### Changed
+- Changed default `--hugo-version` parameter for build-image command to std
+- Updated help (-h) examples for build-image command
+
+### Removed
+- Removed create-content placeholder component
+- Removed completion component
+
 ## [v0.3.1] - 2025-04-24
 ### Fixed
 - Changed flag `--mount-hugo` to `--mount-toml` in launch-server command

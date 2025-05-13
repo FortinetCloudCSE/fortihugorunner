@@ -15,6 +15,9 @@ var rootCmd = &cobra.Command{
 	Use:   "docker-run-go",
 	Short: "FortinetCloudCSE Workshop Docker development utility.",
 	Long:  "Includes functions for facilitating Hugo app development with docker containers.",
+	CompletionOptions: cobra.CompletionOptions{
+		DisableDefaultCmd: true,
+	},
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		err := checkDockerRunning()
 		if err != nil {

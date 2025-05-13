@@ -16,8 +16,8 @@ var buildImageCmd = &cobra.Command{
 	Long: `Builds a Docker image with the specified environment.
 
 Example:
-  docker-run-go build-image author-dev
-  docker-run-go build-image admin-dev
+  docker-run-go build-image --env author-dev
+  docker-run-go build-image --env admin-dev --hugo-version 0.146.0
 `,
 	//Args: cobra.ExactArgs(1), // Require exactly one argument
 	Run: func(cmd *cobra.Command, args []string) {
@@ -64,5 +64,5 @@ Example:
 func init() {
 	rootCmd.AddCommand(buildImageCmd)
 	buildImageCmd.Flags().String("env", "author-dev", "Environment. author-dev (prod) creates a fortinet-hugo image. admin-dev (dev) creates a hugotester image.")
-	buildImageCmd.Flags().String("hugo-version", "0.145.0", "Hugo version.")
+	buildImageCmd.Flags().String("hugo-version", "std", "Hugo base image version Go will pull before proceeding to build the <env> image. This must match the hugomods/hugo tag referenced in your Dockerfile.")
 }
