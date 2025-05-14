@@ -1,0 +1,25 @@
+name: PR Checklist Comment
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  comment-checklist:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body:
+
+## PR Review Checklist
+
+Before approving: please confirm the following:
+
+- [ ] [UserRepo](https://github.com/FortinetCloudCSE/UserRepo) documentation updated to reflect current changes/updates/modifications.
+- [ ] If a new command/component has been added, ensure associated help (-h) message provides sufficient information.
+          })
