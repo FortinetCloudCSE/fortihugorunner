@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"docker-run-go/dockerinternal"
+	"docker-run-go/pkg/dockerinternal"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )
