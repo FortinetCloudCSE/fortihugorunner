@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.4.2] - 2025-05-29
+## Changed
+- Renamed project from 'docker-run-go' to 'fortihugorunner'.
+- Go module path changed from 'github.com/FortinetCloudCSE/docker-run-go' to 'github.com/FortinetCloudCSE/fortihugorunner'.
+- 
+
 ## [v0.3.2] - 2025-05-13
 ### Changed
 - Changed default `--hugo-version` parameter for build-image command to std

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"docker-run-go/dockerinternal"
+	"fortihugorunner/dockerinternal"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +29,7 @@ var launchServerCmd = &cobra.Command{
 	Long: `Launch the Hugo server container based on specified image and other parameters.
 
 Example:
-  ./docker-run-go launch-server \
+  ./fortihugorunner launch-server \
       --docker-image fortinet-hugo:latest \
       --host-port 1313 \
       --container-port 1313 \

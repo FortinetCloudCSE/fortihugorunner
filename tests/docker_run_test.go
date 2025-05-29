@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	"docker-run-go/dockerinternal"
+	"fortihugorunner/dockerinternal"
 )
 
 func TestAdjustPathForDocker_Darwin(t *testing.T) {

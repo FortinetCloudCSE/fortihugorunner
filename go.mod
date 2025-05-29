@@ -1,4 +1,4 @@
-module docker-run-go
+module fortihugorunner
 
 go 1.23.4
 

@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"context"
-	"docker-run-go/version"
+	"fortihugorunner/version"
 	"fmt"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
@@ -12,7 +12,7 @@ import (
 var rootVersion bool
 
 var rootCmd = &cobra.Command{
-	Use:   "docker-run-go",
+	Use:   "fortihugorunner",
 	Short: "FortinetCloudCSE Workshop Docker development utility.",
 	Long:  "Includes functions for facilitating Hugo app development with docker containers.",
 	CompletionOptions: cobra.CompletionOptions{
@@ -61,5 +61,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolVarP(&rootVersion, "version", "v", false, "docker-run-go version information")
+	rootCmd.PersistentFlags().BoolVarP(&rootVersion, "version", "v", false, "fortihugorunner version information")
 }

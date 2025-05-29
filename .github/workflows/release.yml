@@ -37,7 +37,7 @@ jobs:
 
       - name: Build binary
         run: |
-          BIN_NAME="docker-run-go-${{ matrix.goos }}-${{ matrix.goarch }}"
+          BIN_NAME="fortihugorunner-${{ matrix.goos }}-${{ matrix.goarch }}"
           if [ "${{ matrix.goos }}" = "windows" ]; then
             BIN_NAME="${BIN_NAME}.exe"
           fi
@@ -46,6 +46,6 @@ jobs:
       - name: Upload binary to release
         uses: softprops/action-gh-release@v1
         with:
-          files: docker-run-go-*
+          files: fortihugorunner-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

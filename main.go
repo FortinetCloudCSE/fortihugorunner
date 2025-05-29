@@ -1,6 +1,6 @@
 package main
 
-import "docker-run-go/cmd"
+import "fortihugorunner/cmd"
 
 func main() {
 	cmd.Execute()

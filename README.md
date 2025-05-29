@@ -6,7 +6,7 @@
 
 - Docker installed (via Rancher Desktop, for example) and running
 
-Navigate to the [releases](https://github.com/FortinetCloudCSE/docker-run-go/releases) page and right click the binary for your OS/Architecture, click "Save Link As...", and choose your preferred download location.
+Navigate to the [releases](https://github.com/FortinetCloudCSE/fortihugorunner/releases) page and right click the binary for your OS/Architecture, click "Save Link As...", and choose your preferred download location.
 
 Then, you can either copy the binary from that directory into your system path or to the directory containing your workshop.
 
@@ -27,11 +27,11 @@ C:\\echo %PATH%
 In Linux or MacOS:
 
 ```bash
-> mv docker-run-go-<OS>-<arch> docker-run-go
+> mv fortihugorunner-<OS>-<arch> fortihugorunner
 
-> ./docker-run-go build-image --env admin-dev     #builds an image for testing (hugotester:latest)
+> ./fortihugorunner build-image --env admin-dev     #builds an image for testing (hugotester:latest)
 
-> ./docker-run-go build-image --env author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
+> ./fortihugorunner build-image --env author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
 ```
 
 **Note: If binary is located in your system path, omit './' when running the commands throughout this document.**
@@ -39,11 +39,11 @@ In Linux or MacOS:
 In Windows:
 
 ```bash
-C:\\move docker-run-go-windows-<arch>.exe docker-run-go.exe
+C:\\move fortihugorunner-windows-<arch>.exe fortihugorunner.exe
 
-C:\\docker-run-go.exe build-image --env admin-dev     #builds an image for testing (hugotester:latest)
+C:\\fortihugorunner.exe build-image --env admin-dev     #builds an image for testing (hugotester:latest)
 
-C:\\docker-run-go.exe build-image --env author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
+C:\\fortihugorunner.exe build-image --env author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
 ```
 
 
@@ -52,7 +52,7 @@ C:\\docker-run-go.exe build-image --env author-dev    #builds an image for works
 In Linux or MacOS:
 
 ```
-> ./docker-run-go launch-server \
+> ./fortihugorunner launch-server \
       --docker-image fortinet-hugo:latest \
       --host-port 1313 \
       --container-port 1313 \
@@ -63,7 +63,7 @@ In Linux or MacOS:
 In Windows:
 
 ```
-C:\\docker-run-go.exe launch-server \
+C:\\fortihugorunner.exe launch-server \
       --docker-image fortinet-hugo:latest \
       --host-port 1313 \
       --container-port 1313 \
@@ -76,14 +76,14 @@ To see all other commands or get help:
 On Linux or MacOS:
 
 ```
-> ./docker-run-go -h
-> ./docker-run-go launch-server -h
+> ./fortihugorunner -h
+> ./fortihugorunner launch-server -h
 ```
 
 On Windows:
 
 ```
-C:\\docker-run-go.exe -h
+C:\\fortihugorunner.exe -h
 ```
 
 ## To build the CLI tool:
@@ -98,7 +98,7 @@ C:\\docker-run-go.exe -h
 ```
 > git clone <HTTPS/SSH URL found in the 'Code' dropdown above>
 
-> cd docker-run-go
+> cd fortihugorunner
 ```
 
 *Download necessary go libraries:*
@@ -115,21 +115,21 @@ C:\\docker-run-go.exe -h
 
 - **Linux/x86_64:**
 ```
-> GOOS=linux GOARCH=amd64 go build -o docker-run-go .
+> GOOS=linux GOARCH=amd64 go build -o fortihugorunner .
 ```
 - **macOS/AMD64:**
 ```
-> GOOS=darwin GOARCH=amd64 go build -o docker-run-go .
+> GOOS=darwin GOARCH=amd64 go build -o fortihugorunner .
 ```
 - **Windows/x86_64:**
 ```
-> GOOS=windows GOARCH=amd64 go build -o docker-run-go.exe .
+> GOOS=windows GOARCH=amd64 go build -o fortihugorunner.exe .
 
 ```
 
 *Update executable permissions if needed:*
 ```
-> chmod +x docker-run-go
+> chmod +x fortihugorunner
 ```
 
 *Copy the executable into a directory in the system path. To list the path, run:*

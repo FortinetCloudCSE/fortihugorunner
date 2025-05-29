@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"docker-run-go/dockerinternal"
+	"fortihugorunner/dockerinternal"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )
@@ -16,8 +16,8 @@ var buildImageCmd = &cobra.Command{
 	Long: `Builds a Docker image with the specified environment.
 
 Example:
-  docker-run-go build-image --env author-dev
-  docker-run-go build-image --env admin-dev --hugo-version 0.146.0
+  fortihugorunner build-image --env author-dev
+  fortihugorunner build-image --env admin-dev --hugo-version 0.146.0
 `,
 	//Args: cobra.ExactArgs(1), // Require exactly one argument
 	Run: func(cmd *cobra.Command, args []string) {
