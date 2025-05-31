@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"context"
-	"fortihugorunner/version"
 	"fmt"
+	"fortihugorunner/version"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 	"os"
+	"runtime"
 )
 
 var rootVersion bool
@@ -31,7 +32,10 @@ var rootCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if rootVersion {
-			fmt.Printf("Version: %s\nDate: %s\n", version.Version, version.Date)
+			osType := runtime.GOOS
+			arch := runtime.GOARCH
+			platform := osType + "/" + arch
+			fmt.Printf("Version: %s\nDate: %s\nPlatform: %s\n", version.Version, version.Date, platform)
 			os.Exit(0)
 		}
 		cmd.Help()
