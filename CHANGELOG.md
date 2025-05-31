@@ -1,10 +1,17 @@
 # Changelog
 
+## [v0.5.0] - 2025-05-30
+### Added
+- `update` command: allows users to self-update the current binary to the latest release.
+- `rename` command: enables 'trimming' the platform information from the executable filename.
+
+### Changed
+- Enhanced `-v` (version) output to include platform (OS/arch) information.
+
 ## [v0.4.2] - 2025-05-29
-## Changed
+### Changed
 - Renamed project from 'docker-run-go' to 'fortihugorunner'.
 - Go module path changed from 'github.com/FortinetCloudCSE/docker-run-go' to 'github.com/FortinetCloudCSE/fortihugorunner'.
-- 
 
 ## [v0.3.2] - 2025-05-13
 ### Changed
