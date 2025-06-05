@@ -1,6 +1,6 @@
 package version
 
 var (
-	Version = "v0.5.0"
-	Date    = "2025-05-29"
+	Version = "v0.6.0"
+	Date    = "2025-06-05"
 )

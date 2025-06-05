@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.6.0] - 2025-06-05
+### Changed
+- `update` command now renames binary to `fortihugorunner` or `fortihugorunner.exe` prior to updating
+
 ## [v0.5.0] - 2025-05-30
 ### Added
 - `update` command: allows users to self-update the current binary to the latest release.
