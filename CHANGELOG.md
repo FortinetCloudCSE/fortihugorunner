@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.6.1] - 2025-06-10
+### Security
+- Updated dependencies to address security vulnerabilities:
+  - golang.org/x/crypto updated to v0.39.0 (fixes CVE-2025-22869)
+  - golang.org/x/net updated to v0.41.0 (fixes CVE-2025-22872 and CVE-2025-22870) 
+
 ## [v0.6.0] - 2025-06-05
 ### Changed
 - `update` command now renames binary to `fortihugorunner` or `fortihugorunner.exe` prior to updating
