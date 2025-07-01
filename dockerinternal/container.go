@@ -54,7 +54,7 @@ func extractBranchByStage(dockerfile string, stage string) (string, error) {
 	return "", fmt.Errorf("no branch found in Dockerfile")
 }
 
-func ensureImagePulled(cli client.ImageAPIClient, imageName string) error {
+func EnsureImagePulled(cli client.ImageAPIClient, imageName string) error {
 	ctx := context.Background()
 
 	fmt.Printf("Ensuring frontend image %s is available...\n", imageName)
@@ -99,7 +99,7 @@ func BuildDockerImage(cli *client.Client, imageName string, target string, envAr
 	}
 
 	for _, img := range images {
-		if err := ensureImagePulled(cli, img); err != nil {
+		if err := EnsureImagePulled(cli, img); err != nil {
 			panic(err)
 		}
 	}

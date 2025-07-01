@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.7.1] - 2025-07-01
+### Added
+- `pull-image` command: allows users to pull latest prebuilt fortinet-hugo and hugotester images from our public ECR repositories.
+
 ## [v0.6.1] - 2025-06-10
 ### Security
 - Updated dependencies to address security vulnerabilities:

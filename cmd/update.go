@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-        "time"
 	"fortihugorunner/utilities"
 	"fortihugorunner/version"
 	"github.com/blang/semver"
@@ -13,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 const repoSlug = "FortinetCloudCSE/fortihugorunner"
@@ -34,10 +34,10 @@ var updateCmd = &cobra.Command{
 		expectedPath := filepath.Join(dir, expectedName)
 
 		if !strings.EqualFold(filepath.Base(exePath), expectedName) {
-                              
-                        fmt.Println("Renaming the executable...")
-                        // sleep to deal with a Windows file-locking mechanism
-                        time.Sleep(500 * time.Millisecond)
+
+			fmt.Println("Renaming the executable...")
+			// sleep to deal with a Windows file-locking mechanism
+			time.Sleep(500 * time.Millisecond)
 			err = utilities.RenameBinary(exePath)
 			if err != nil {
 				return fmt.Errorf("error renaming binary: %w", err)
@@ -47,7 +47,7 @@ var updateCmd = &cobra.Command{
 			cmd.Stderr = os.Stderr
 			cmd.Stdin = os.Stdin
 			cmd.Start()
-                        cmd.Wait()
+			cmd.Wait()
 			os.Exit(0)
 		}
 
@@ -60,18 +60,18 @@ var updateCmd = &cobra.Command{
 
 		if err != nil {
 			return fmt.Errorf("update failed: %w", err)
-		} 
-                
+		}
+
 		if latest.Version.Equals(v) {
 			fmt.Fprintf(os.Stdout, "You're already running the latest version (%s)\n", version.Version)
-                        os.Stdout.Sync()
-                        os.Exit(0)
+			os.Stdout.Sync()
+			os.Exit(0)
 		} else {
 			fmt.Fprintf(os.Stdout, "Successfully updated to version %s!\n", latest.Version)
-                        os.Stdout.Sync()
-                        os.Exit(0)
+			os.Stdout.Sync()
+			os.Exit(0)
 		}
-                
+
 		return nil
 	},
 }

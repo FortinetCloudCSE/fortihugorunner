@@ -76,6 +76,24 @@ C:\\fortihugorunner.exe build-image --env author-dev    #builds an image for wor
 ```
 ---
 
+### Prebuilt Docker Images
+
+We have prebuilt fortinet-hugo and hugotester Docker images available for download from the following public repositories:
+
+```
+public.ecr.aws/k4n6m5h8/fortinet-hugo
+public.ecr.aws/k4n6m5h8/hugotester
+```
+
+These can be pulled with fortihugorunner via:
+
+```
+> ./fortihugorunner pull-image --env author-dev     # default, pulls fortinet-hugo image
+> ./fortihugorunner pull-image --env admin-dev      # pulls hugotester image
+```
+
+---
+
 ### Launching a Hugo Server Container
 
 In Linux or MacOS:
