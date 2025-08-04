@@ -60,7 +60,7 @@ Example:
 			os.Exit(1)
 		}
 
-		// Tage the image
+		// Tag the image
 		err = cli.ImageTag(context.Background(), fullUri, containerName)
 		if err != nil {
 			fmt.Printf("Error re-tagging image: %v\n", err)

@@ -7,6 +7,8 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+        "strings"
+        "log"
 
 	"fortihugorunner/dockerinternal"
 	"github.com/docker/docker/client"
@@ -43,6 +45,7 @@ Example:
 			ContainerPort: getFlagString(cmd, "container-port"),
 			WatchDir:      getFlagString(cmd, "watch-dir"),
 			MountToml:     getFlagBool(cmd, "mount-toml"),
+			PullLatest:    getFlagBool(cmd, "pull-latest"),
 		}
 
 		// Ensure the watch directory is absolute.
@@ -56,6 +59,50 @@ Example:
 		if err != nil {
 			fmt.Printf("Error creating Docker client: %v\n", err)
 			os.Exit(1)
+		}
+
+		// Check local Docker image up to date
+		if cfg.PullLatest == true {
+			cseImages := []string{"fortinet-hugo", "hugotester"}
+			imageName := strings.Split(cfg.DockerImage, ":")[0]
+                        ecrReg := "public.ecr.aws/k4n6m5h8/"
+
+			for _, s := range cseImages {
+				if imageName == s {
+					fmt.Printf("Checking for latest %s image locally...\n", imageName)
+                                        fullUri := ecrReg + s + ":latest"
+                                        envMap := map[string]string{
+                                             "hugotester": "admin-dev",
+                                             "fortinet-hugo":  "author-dev",
+                                        }
+					localDigest, err := dockerinternal.GetLocalDigest(fullUri, ctx, cli, envMap[imageName])
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					remoteDigest, err := dockerinternal.GetECRPublicDigest(s, "latest", ctx)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					match := strings.TrimPrefix(localDigest, "sha256:") == strings.TrimPrefix(remoteDigest, "sha256:")
+					if match {
+						fmt.Println("✅ Local image is up-to-date.")
+					} else {
+						fmt.Println("⚠️  Local image is outdated. Pulling latest image.")
+						err = dockerinternal.EnsureImagePulled(cli, fullUri)
+						if err != nil {
+							log.Fatal(err)
+						}
+                                                err = cli.ImageTag(ctx, fullUri, cfg.DockerImage)
+                                                if err != nil {
+                                                        fmt.Printf("Error re-tagging image: %v\n", err)
+                                                        os.Exit(1)
+                                                }
+					}
+					break
+				}
+			}
 		}
 
 		containerID, err := dockerinternal.StartContainer(ctx, cli, cfg)
@@ -91,4 +138,5 @@ func init() {
 	launchServerCmd.Flags().String("container-port", "1313", "Container port to expose")
 	launchServerCmd.Flags().String("watch-dir", ".", "Directory to watch for file changes")
 	launchServerCmd.Flags().Bool("mount-toml", false, "Mount the hugo.toml in your workshop directory and watch for updates. (Default is false)")
+	launchServerCmd.Flags().Bool("pull-latest", true, "Check if latest image is available. If not, download it from registry. (Default is true)")
 }

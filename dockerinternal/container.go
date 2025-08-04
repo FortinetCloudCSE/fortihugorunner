@@ -11,12 +11,17 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ecrpublic"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+
+        ecrpublictypes "github.com/aws/aws-sdk-go-v2/service/ecrpublic/types"
 )
 
 type ServerConfig struct {
@@ -25,11 +30,55 @@ type ServerConfig struct {
 	ContainerPort string
 	WatchDir      string
 	MountToml     bool
+        PullLatest    bool
 }
 
 type ContentConfig struct {
 	DockerImage string
 	// Add other flags as needed.
+}
+
+func GetLocalDigest(image string, ctx context.Context, cli *client.Client, imageArg string) (string, error) {
+
+	inspect, _, err := cli.ImageInspectWithRaw(ctx, image)
+	if err != nil {
+             return "", fmt.Errorf("Error: %v\nPlease run 'fortihugorunner pull-image %v' to download latest Docker image.", err, imageArg)
+	}
+
+	// Take the sha256 part from RepoDigest
+	if len(inspect.RepoDigests) > 0 {
+		parts := strings.Split(inspect.RepoDigests[0], "@")
+		if len(parts) == 2 {
+			return parts[1], nil
+		}
+	}
+
+	// fallback to ID
+	return strings.TrimPrefix(inspect.ID, "sha256:"), nil
+}
+
+func GetECRPublicDigest(repoName, imageTag string, ctx context.Context) (string, error) {
+
+	cfg, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	svc := ecrpublic.NewFromConfig(cfg)
+	resp, err := svc.DescribeImages(ctx, &ecrpublic.DescribeImagesInput{
+		RepositoryName: aws.String(repoName),
+		ImageIds:       []ecrpublictypes.ImageIdentifier{{ImageTag: aws.String(imageTag)}},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if len(resp.ImageDetails) == 0 {
+		return "", fmt.Errorf("no image found in ECR public for %s:%s", repoName, imageTag)
+	}
+
+	// Use the first image digest
+	return aws.ToString(resp.ImageDetails[0].ImageDigest), nil
 }
 
 func extractBranchByStage(dockerfile string, stage string) (string, error) {
