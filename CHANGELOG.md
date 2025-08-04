@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.7.2] - 2025-08-06
+### Changed
+- `pull-latest` parameter added to `launch-server` component to pull latest Docker image before running container
+
 ## [v0.7.1] - 2025-07-01
 ### Added
 - `pull-image` command: allows users to pull latest prebuilt fortinet-hugo and hugotester images from our public ECR repositories.

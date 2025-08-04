@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
+        "log"
 
 	"fortihugorunner/dockerinternal"
 	"github.com/docker/docker/client"
@@ -43,6 +45,7 @@ Example:
 			ContainerPort: getFlagString(cmd, "container-port"),
 			WatchDir:      getFlagString(cmd, "watch-dir"),
 			MountToml:     getFlagBool(cmd, "mount-toml"),
+			PullLatest:    getFlagBool(cmd, "pull-latest"),
 		}
 
 		// Ensure the watch directory is absolute.
@@ -56,6 +59,27 @@ Example:
 		if err != nil {
 			fmt.Printf("Error creating Docker client: %v\n", err)
 			os.Exit(1)
+		}
+
+		// Check local Docker image up to date
+                fmt.Printf("PullLatest flag set to: %s", cfg.PullLatest)
+		if cfg.PullLatest == true {
+			cseImages := []string{"fortinet-hugo", "hugotester"}
+			imageName := strings.Split(cfg.DockerImage, ":")[0]
+			ecrReg := "public.ecr.aws/k4n6m5h8/"
+
+			for _, s := range cseImages {
+				if imageName == s {
+					image := ecrReg + s
+					tag := "latest"
+					err = dockerinternal.LocalImageCheck(image, tag, cli, s)
+					if err != nil {
+						fmt.Printf("Error in LocalImageCheck: %v", err)
+                                                log.Fatal(err)
+					}
+                                        break
+				}
+			}
 		}
 
 		containerID, err := dockerinternal.StartContainer(ctx, cli, cfg)
@@ -90,5 +114,6 @@ func init() {
 	launchServerCmd.Flags().String("host-port", "1313", "Host port to expose")
 	launchServerCmd.Flags().String("container-port", "1313", "Container port to expose")
 	launchServerCmd.Flags().String("watch-dir", ".", "Directory to watch for file changes")
-	launchServerCmd.Flags().Bool("mount-toml", false, "Mount the hugo.toml in your workshop directory and watch for updates. (Default is false)")
+	launchServerCmd.Flags().Bool("mount-toml", false, "Use '--mount-toml=true' to mount the hugo.toml in your workshop directory and watch for updates.")
+	launchServerCmd.Flags().Bool("pull-latest", true, "Check local Docker image is up-to-date. If not, download latest. Use '--pull-latest=false' to disable.")
 }

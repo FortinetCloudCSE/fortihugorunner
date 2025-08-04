@@ -25,11 +25,94 @@ type ServerConfig struct {
 	ContainerPort string
 	WatchDir      string
 	MountToml     bool
+	PullLatest    bool
 }
 
 type ContentConfig struct {
 	DockerImage string
 	// Add other flags as needed.
+}
+
+func LocalImageCheck(image string, tag string, cli *client.Client, imageName string) error {
+
+	ctx := context.Background()
+	imageWithTag := image + ":" + tag
+
+	fmt.Printf("Checking for %s local/remote repo digest match...\n", imageWithTag)
+	remoteDigest, err := getRemoteDigest(image, tag)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Remote Digest:", remoteDigest)
+
+	localDigest, err := getLocalRepoDigest(cli, image)
+	if err != nil {
+		fmt.Println("Local image not found or no digest found.")
+		localDigest = ""
+	} else {
+		fmt.Println("Local RepoDigest:", localDigest)
+	}
+	if localDigest != remoteDigest {
+		fmt.Println("Update needed → pulling image...")
+		if err := EnsureImagePulled(cli, imageWithTag); err != nil {
+			fmt.Println("Failed to pull image:", err)
+		} else {
+			fmt.Println("Image updated successfully, retagging...")
+			err = cli.ImageTag(ctx, imageWithTag, imageName+":"+tag)
+			if err != nil {
+				fmt.Printf("Error re-tagging image: %v\n", err)
+				return err
+			}
+		}
+	} else {
+               fmt.Println("Local image already up to date!")
+        }
+	return nil
+}
+
+func getRemoteDigest(image string, tag string) (string, error) {
+	parts := strings.SplitN(image, "/", 3)
+	if len(parts) < 3 {
+		return "", fmt.Errorf("expected image format: public.ecr.aws/<namespace>/<repo>")
+	}
+
+	registry := parts[0]
+	namespaceRepo := parts[1] + "/" + parts[2]
+	manifestURL := fmt.Sprintf("https://%s/v2/%s/manifests/%s", registry, namespaceRepo, tag)
+
+	digest, err := fetchManifestDigestWithToken(manifestURL, "")
+	if err == nil {
+		return digest, nil
+	}
+
+	// If unauthorized, try to fetch token
+	if !strings.Contains(err.Error(), "401") {
+		return "", err
+	}
+
+	// Fetch token from WWW-Authenticate header
+	token, tokenErr := getRegistryToken(manifestURL)
+	if tokenErr != nil {
+		return "", fmt.Errorf("failed to get registry token: %v", tokenErr)
+	}
+
+	return fetchManifestDigestWithToken(manifestURL, token)
+}
+
+func getLocalRepoDigest(cli *client.Client, image string) (string, error) {
+	ctx := context.Background()
+	imgInspect, _, err := cli.ImageInspectWithRaw(ctx, image)
+	if err != nil {
+		return "", err
+	}
+
+	for _, digest := range imgInspect.RepoDigests {
+		if strings.HasPrefix(digest, image+"@") {
+			return strings.SplitN(digest, "@", 2)[1], nil
+		}
+	}
+
+	return "", fmt.Errorf("no matching RepoDigest found for image: %s", image)
 }
 
 func extractBranchByStage(dockerfile string, stage string) (string, error) {
@@ -57,12 +140,12 @@ func extractBranchByStage(dockerfile string, stage string) (string, error) {
 func EnsureImagePulled(cli client.ImageAPIClient, imageName string) error {
 	ctx := context.Background()
 
-	fmt.Printf("Ensuring frontend image %s is available...\n", imageName)
+	fmt.Printf("Ensuring required image %s is available...\n", imageName)
 
 	// Use the new `image.PullOptions` from `github.com/docker/docker/api/types/image`
 	out, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to pull frontend image: %w", err)
+		return fmt.Errorf("failed to pull required image %s: %w", imageName, err)
 	}
 	defer out.Close()
 
@@ -72,7 +155,7 @@ func EnsureImagePulled(cli client.ImageAPIClient, imageName string) error {
 		return fmt.Errorf("error reading image pull output: %w", err)
 	}
 
-	fmt.Println("Frontend image pulled successfully.")
+	fmt.Printf("%s image pulled successfully", imageName)
 	return nil
 }
 
