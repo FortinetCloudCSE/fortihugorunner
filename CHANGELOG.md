@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.7.3] - 2025-08-06
+### Security
+- Updated dependencies to address security vulnerabilities
+  - golang.org/x/oauth2 updated to v0.27.0 (fixes CVE-2025-22868)
+
 ## [v0.7.2] - 2025-08-06
 ### Changed
 - `pull-latest` parameter added to `launch-server` component to pull latest Docker image before running container
