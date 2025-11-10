@@ -3,15 +3,14 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
-        "log"
 
 	"fortihugorunner/dockerinternal"
-	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )
 
@@ -55,14 +54,14 @@ Example:
 		}
 
 		ctx := context.Background()
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+		cli, err := dockerinternal.NewDockerClient()
 		if err != nil {
 			fmt.Printf("Error creating Docker client: %v\n", err)
 			os.Exit(1)
 		}
 
 		// Check local Docker image up to date
-                fmt.Printf("PullLatest flag set to: %s", cfg.PullLatest)
+		fmt.Printf("PullLatest flag set to: %t", cfg.PullLatest)
 		if cfg.PullLatest == true {
 			cseImages := []string{"fortinet-hugo", "hugotester"}
 			imageName := strings.Split(cfg.DockerImage, ":")[0]
@@ -75,9 +74,9 @@ Example:
 					err = dockerinternal.LocalImageCheck(image, tag, cli, s)
 					if err != nil {
 						fmt.Printf("Error in LocalImageCheck: %v", err)
-                                                log.Fatal(err)
+						log.Fatal(err)
 					}
-                                        break
+					break
 				}
 			}
 		}

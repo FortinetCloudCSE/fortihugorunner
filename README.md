@@ -5,7 +5,9 @@
 
 **Prereqs**:
 
-- Docker installed (via Rancher Desktop, for example) and running
+- Docker installed (via Rancher Desktop, for example) and running. 
+  
+  ***Note***: The tool will read ~/.docker/config.json and honor the Docker context automatically. No special configuration is necessary if using a non-standard socket (Colima, rootless Docker, etc.), but it can always be overridden by setting ```DOCKER_CONTEXT=<name>``` or ```DOCKER_HOST=…``` if intending to use a specific daemon.
 
 Navigate to the [releases](https://github.com/FortinetCloudCSE/fortihugorunner/releases) page and right click the binary for your OS/Architecture, click "Save Link As...", and choose your preferred download location. To determine your architecture, follow the steps in the next section.
 

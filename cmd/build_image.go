@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"fortihugorunner/dockerinternal"
-	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +43,7 @@ Example:
 		containerName := containerMap[env]
 
 		// Initialize Docker client
-		cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+		cli, err := dockerinternal.NewDockerClient()
 		if err != nil {
 			fmt.Printf("Error creating Docker client: %v\n", err)
 			os.Exit(1)

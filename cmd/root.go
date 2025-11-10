@@ -3,8 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"fortihugorunner/dockerinternal"
 	"fortihugorunner/version"
-	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 	"os"
 	"runtime"
@@ -44,7 +44,7 @@ var rootCmd = &cobra.Command{
 
 func checkDockerRunning() error {
 	ctx := context.Background()
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := dockerinternal.NewDockerClient()
 	if err != nil {
 		return fmt.Errorf("could not create Docker client: %w", err)
 	}

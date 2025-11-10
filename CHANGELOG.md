@@ -1,5 +1,10 @@
 # Changelog
 
+
+## [v0.7.4] - 2025-11-10
+### Added
+- Added Docker context awareness so fortihugorunner uses the same daemon/socket as the Docker CLI, removing the need to export DOCKER_HOST for nonstandard environments. 
+
 ## [v0.7.3] - 2025-08-06
 ### Security
 - Updated dependencies to address security vulnerabilities

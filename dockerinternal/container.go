@@ -65,8 +65,8 @@ func LocalImageCheck(image string, tag string, cli *client.Client, imageName str
 			}
 		}
 	} else {
-               fmt.Println("Local image already up to date!")
-        }
+		fmt.Println("Local image already up to date!")
+	}
 	return nil
 }
 
@@ -171,7 +171,7 @@ func BuildDockerImage(cli *client.Client, imageName string, target string, envAr
 		return fmt.Errorf("Branch not found: %w", err)
 	}
 
-	cli, err = client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err = NewDockerClient()
 	if err != nil {
 		panic(fmt.Errorf("failed to create Docker client: %w", err))
 	}
