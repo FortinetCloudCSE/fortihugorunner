@@ -1,6 +1,17 @@
 # Changelog
 
 
+## [v0.7.5] - 2026-06-10
+### Security
+- Upgraded `go.opentelemetry.io/otel` family to v1.43.0 (fixes CVE-2026-39883, CVE-2026-24051, CVE-2026-39882)
+- Upgraded `github.com/ulikunitz/xz` to v0.5.15 (fixes CVE-2025-58058)
+- Upgraded `golang.org/x/crypto` to v0.53.0 (fixes CVE-2025-47914, CVE-2025-58181)
+- Upgraded `github.com/docker/docker` to v28.5.2 (partially addresses CVE-2026-34040, CVE-2026-33997)
+- **Upstream patch pending** — the following docker/docker CVEs have no patch available yet; docker/docker v29.x is not yet published to the Go module proxy:
+  - GHSA-rg2x-37c3-w2rh / CVE-2026-42306 (High)
+  - GHSA-x86f-5xw2-fm2r / CVE-2026-41568 (High)
+  - GHSA-vp62-88p7-qqf5 / CVE-2026-41567 (Medium)
+
 ## [v0.7.4] - 2025-11-10
 ### Added
 - Added Docker context awareness so fortihugorunner uses the same daemon/socket as the Docker CLI, removing the need to export DOCKER_HOST for nonstandard environments. 
