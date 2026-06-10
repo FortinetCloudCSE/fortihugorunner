@@ -1,0 +1,83 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  tag-and-release:
+    name: Compute version, tag, and trigger release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest semver tag
+        id: prev
+        run: |
+          # Find the most recent vX.Y.Z tag reachable from HEAD
+          PREV=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          echo "tag=${PREV:-v0.0.0}" >> "$GITHUB_OUTPUT"
+
+      - name: Determine bump level from commit messages
+        id: bump
+        run: |
+          PREV="${{ steps.prev.outputs.tag }}"
+          # Commits since last tag (or all commits if no tag yet)
+          if git rev-parse "$PREV" >/dev/null 2>&1; then
+            COMMITS=$(git log "${PREV}..HEAD" --pretty=format:"%s")
+          else
+            COMMITS=$(git log --pretty=format:"%s")
+          fi
+
+          LEVEL="patch"
+          while IFS= read -r msg; do
+            if echo "$msg" | grep -qiE "BREAKING[[:space:]]CHANGE|^[a-z]+(\([^)]*\))?!:"; then
+              LEVEL="major"; break
+            elif echo "$msg" | grep -qE "^feat(\([^)]*\))?:"; then
+              LEVEL="minor"
+            fi
+          done <<< "$COMMITS"
+          echo "level=${LEVEL}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute next version
+        id: next
+        run: |
+          PREV="${{ steps.prev.outputs.tag }}"
+          LEVEL="${{ steps.bump.outputs.level }}"
+          # Strip leading 'v' and split
+          VER="${PREV#v}"
+          MAJOR=$(echo "$VER" | cut -d. -f1)
+          MINOR=$(echo "$VER" | cut -d. -f2)
+          PATCH=$(echo "$VER" | cut -d. -f3)
+          case "$LEVEL" in
+            major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR+1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH+1)) ;;
+          esac
+          NEXT="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=${NEXT}" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if tag already exists
+        id: check
+        run: |
+          NEXT="${{ steps.next.outputs.version }}"
+          if git rev-parse "$NEXT" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push tag
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          NEXT="${{ steps.next.outputs.version }}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$NEXT"
+          git push origin "$NEXT"
