@@ -30,10 +30,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Extract release notes from CHANGELOG
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        id: changelog
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # Extract the block for this version: from the ## [vX.Y.Z] header to the next ## header
+          NOTES=$(awk "/^## \[${TAG}\]/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md)
+          # Write to file to avoid multiline env-var quoting issues
+          echo "$NOTES" > /tmp/release_notes.md
+          echo "notes_file=/tmp/release_notes.md" >> "$GITHUB_OUTPUT"
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'  # Change as needed
+          go-version: '1.23'
 
       - name: Build binary
         run: |
@@ -47,5 +58,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: fortihugorunner-*
+          body_path: ${{ steps.changelog.outputs.notes_file || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
