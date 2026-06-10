@@ -5,10 +5,11 @@ on:
     branches:
       - dev
       - main
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.github/workflows/pr-checklist.yml'
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/test.yml'
 
 jobs:
   test:
