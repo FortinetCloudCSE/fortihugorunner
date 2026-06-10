@@ -1,251 +1,287 @@
 ## FortiHugoRunner: A FortinetCloudCSE Docker development helper
 
-### Download Instructions
+FortiHugoRunner is a command-line tool that manages Hugo workshop development containers. It wraps the Docker SDK to pull, build, and run the Fortinet Hugo images without requiring you to write `docker` commands directly.
+
 ---
 
-**Prereqs**:
+## Table of Contents
 
-- Docker installed (via Rancher Desktop, for example) and running. 
-  
-  ***Note***: The tool will read ~/.docker/config.json and honor the Docker context automatically. No special configuration is necessary if using a non-standard socket (Colima, rootless Docker, etc.), but it can always be overridden by setting ```DOCKER_CONTEXT=<name>``` or ```DOCKER_HOST=…``` if intending to use a specific daemon.
+- [Download and Install](#download-and-install)
+- [Commands](#commands)
+  - [rename](#rename)
+  - [version](#version)
+  - [pull-image](#pull-image)
+  - [build-image](#build-image)
+  - [launch-server](#launch-server)
+  - [update](#update)
+- [Typical Workflow](#typical-workflow)
+- [Build from Source](#build-from-source)
+- [Contributing](#contributing)
 
-Navigate to the [releases](https://github.com/FortinetCloudCSE/fortihugorunner/releases) page and right click the binary for your OS/Architecture, click "Save Link As...", and choose your preferred download location. To determine your architecture, follow the steps in the next section.
+---
 
-#### Windows
+## Download and Install
 
-From the Windows command prompt, run:
+**Prerequisites:** Docker must be installed and running (Rancher Desktop, Docker Desktop, Colima, etc.).
 
-```bash
-C:\\echo %PROCESSOR_ARCHITECTURE%
+> The tool reads `~/.docker/config.json` and honors the active Docker context automatically. Set `DOCKER_CONTEXT=<name>` or `DOCKER_HOST=…` to override.
+
+Navigate to the [releases](https://github.com/FortinetCloudCSE/fortihugorunner/releases) page, right-click the binary for your OS/architecture, and click **Save Link As**.
+
+#### Determine your architecture
+
+**Windows** — from Command Prompt:
+```
+echo %PROCESSOR_ARCHITECTURE%
 ```
 
-| If your command output is:               | then download:                         |
-|------------------------------------------|----------------------------------------|
-| AMD64                                    | fortihugorunner-windows-amd64.exe      |
-| x86                                      | fortihugorunner-windows-386.exe        |
+| Output | Download |
+|--------|----------|
+| AMD64  | `fortihugorunner-windows-amd64.exe` |
+| x86    | `fortihugorunner-windows-386.exe` |
 
-#### MacOS/Linux
-
-From your terminal, run:
-
+**macOS / Linux** — from terminal:
 ```
 uname -m
 ```
 
-| If your command output is:        | then download:                           |
-|-----------------------------------|------------------------------------------|
-| x86_64                            | fortihugorunner-<darwin/linux>-amd64.exe|
-| x86                               | fortihugorunner-<darwin/linux>-386.exe  |
+| Output  | Download |
+|---------|----------|
+| x86_64  | `fortihugorunner-darwin-amd64` or `fortihugorunner-linux-amd64` |
+| arm64   | `fortihugorunner-darwin-arm64` or `fortihugorunner-linux-arm64` |
 
-
-Then, you can either copy the binary from that directory into your system path or to the directory containing your workshop.
-
-To get your system path:
-
-- In bash (linux or mac):
-```
-> echo $PATH 
+After downloading, make the binary executable (macOS/Linux) and optionally move it onto your `$PATH`:
+```bash
+chmod +x fortihugorunner-linux-amd64
+mv fortihugorunner-linux-amd64 /usr/local/bin/fortihugorunner
 ```
 
-- In windows:
-```
-C:\\echo %PATH%
-```
+> **All examples below assume `rename` has been run** (so the binary is just `fortihugorunner`). On Windows, substitute `fortihugorunner.exe` for `fortihugorunner`.
+
 ---
 
-### Building the Hugo Server Image
+## Commands
 
-In Linux or MacOS:
+### rename
+
+Strips the OS/architecture suffix from the downloaded binary filename so subsequent commands are shorter.
 
 ```bash
-> ./fortihugorunner-<OS>-<arch> rename              #trims the OS/arch from the executable for simplicity
-
-> ./fortihugorunner build-image --env admin-dev     #builds an image for testing (hugotester:latest)
-
-> ./fortihugorunner build-image --env author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
+./fortihugorunner-linux-amd64 rename
+# binary is now named: fortihugorunner
 ```
 
-**Note: If binary is located in your system path, omit './' when running the commands throughout this document.**
+---
 
-In Windows:
+### version
+
+Prints the current version, build date, and OS/architecture platform.
 
 ```bash
-C:\\fortihugorunner-windows-<arch>.exe rename           #trims the OS/arch from the executable for simplicity
+fortihugorunner version
+# Version: v0.7.5
+# Date:    2026-06-10
+# Platform: darwin/arm64
 
-C:\\fortihugorunner.exe build-image --env admin-dev     #builds an image for testing (hugotester:latest)
-
-C:\\fortihugorunner.exe build-image --env author-dev    #builds an image for workshop authoring (fortinet-hugo:latest)
-```
----
-
-### Prebuilt Docker Images
-
-We have prebuilt fortinet-hugo and hugotester Docker images available for download from the following public repositories:
-
-```
-public.ecr.aws/k4n6m5h8/fortinet-hugo
-public.ecr.aws/k4n6m5h8/hugotester
-```
-
-These can be pulled with fortihugorunner via:
-
-```
-> ./fortihugorunner pull-image --env author-dev     # default, pulls fortinet-hugo image
-> ./fortihugorunner pull-image --env admin-dev      # pulls hugotester image
+fortihugorunner -v   # shorthand flag, same output
 ```
 
 ---
 
-### Launching a Hugo Server Container
+### pull-image
 
-In Linux or MacOS:
+Pulls the latest prebuilt Hugo development image from the Fortinet public ECR registry and retags it locally.
 
-```
-> ./fortihugorunner launch-server \
-      --docker-image fortinet-hugo:latest \
-      --host-port 1313 \
-      --container-port 1313 \
-      --watch-dir . \
-      --mount-toml
+```bash
+fortihugorunner pull-image --env author-dev   # pulls fortinet-hugo:latest (default)
+fortihugorunner pull-image --env admin-dev    # pulls hugotester:latest
 ```
 
-In Windows:
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--env` | `author-dev` | `author-dev` → `fortinet-hugo` image; `admin-dev` → `hugotester` image |
+| `--registry` | `public.ecr.aws/k4n6m5h8/` | ECR registry prefix |
 
+Public image URIs:
 ```
-C:\\fortihugorunner.exe launch-server \
-      --docker-image fortinet-hugo:latest \
-      --host-port 1313 \
-      --container-port 1313 \
-      --watch-dir . \
-      --mount-toml
+public.ecr.aws/k4n6m5h8/fortinet-hugo:latest
+public.ecr.aws/k4n6m5h8/hugotester:latest
 ```
 
 ---
 
-### Help Menu
+### build-image
 
-On Linux or MacOS:
+Builds a Hugo Docker image locally from the Dockerfile in your current directory.
 
+```bash
+fortihugorunner build-image --env author-dev              # builds fortinet-hugo:latest
+fortihugorunner build-image --env admin-dev               # builds hugotester:latest
+fortihugorunner build-image --env author-dev --hugo-version 0.146.0
 ```
-> ./fortihugorunner -h
-> ./fortihugorunner launch-server -h
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--env` | `author-dev` | `author-dev` → production image (`fortinet-hugo`); `admin-dev` → dev/test image (`hugotester`) |
+| `--hugo-version` | `std` | Hugo base image version tag (must match the `hugomods/hugo` tag in your Dockerfile) |
+
+> Use `pull-image` for most workflows. `build-image` is only needed when customizing the Dockerfile locally.
+
+---
+
+### launch-server
+
+Starts a Hugo development server container, mounts your workshop directory into it, and streams container logs to your terminal. Ctrl-C stops the container cleanly.
+
+```bash
+fortihugorunner launch-server \
+    --docker-image fortinet-hugo:latest \
+    --host-port 1313 \
+    --container-port 1313 \
+    --watch-dir . \
+    --mount-toml
+
+# Pull the latest image before starting (useful in CI or after a long break):
+fortihugorunner launch-server \
+    --docker-image fortinet-hugo:latest \
+    --host-port 1313 \
+    --container-port 1313 \
+    --watch-dir . \
+    --mount-toml \
+    --pull-latest
 ```
 
-On Windows:
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--docker-image` | — | Image name and tag to run (e.g. `fortinet-hugo:latest`) |
+| `--host-port` | — | Host port to bind (e.g. `1313`) |
+| `--container-port` | — | Container port to expose (e.g. `1313`) |
+| `--watch-dir` | — | Path to the workshop directory to mount into the container |
+| `--mount-toml` | `false` | Mount `hugo.toml` from `--watch-dir` into the container |
+| `--pull-latest` | `false` | Pull the latest version of `--docker-image` before starting |
 
-```
-C:\\fortihugorunner.exe -h
+Once running, open `http://localhost:<host-port>` in your browser. The server reloads automatically when files in `--watch-dir` change.
+
+---
+
+### update
+
+Updates the `fortihugorunner` binary in place to the latest GitHub release. If the binary filename includes an OS/architecture suffix, it will be renamed first automatically.
+
+```bash
+fortihugorunner update
 ```
 
 ---
 
-### Update the Binary to the Latest Version
+## Typical Workflow
 
-On Linux or MacOS:
+```bash
+# 1. Download and rename the binary (one-time)
+./fortihugorunner-darwin-arm64 rename
 
-```
-> ./fortihugorunner update
-```
+# 2. Pull the latest prebuilt image
+fortihugorunner pull-image --env author-dev
 
-On Windows:
+# 3. Launch the server from your workshop directory
+cd ~/my-workshop
+fortihugorunner launch-server \
+    --docker-image fortinet-hugo:latest \
+    --host-port 1313 \
+    --container-port 1313 \
+    --watch-dir . \
+    --mount-toml
 
-```
-C:\\fortihugorunner.exe update
-```
----
+# 4. Open http://localhost:1313 — edits reload automatically
 
-## Build Instructions
-
-**Prereqs**:
-
-- Docker installed (via Rancher Desktop, for example)
-- Recent [Golang](https://go.dev/) version installed.
-  - Installation information [here](https://go.dev/doc/install).
-
-1. Clone the repository
-
-```
-> git clone <HTTPS/SSH URL found in the 'Code' dropdown above>
-
-> cd fortihugorunner
-```
-
-2. Download necessary go libraries
-
-```
-> go mod download
-```
-
-3. Build
-
-   Note: Before building, you can confirm availability of the desired OS/Architecture via:
-```
-> go tool dist list
-``` 
-
-- **Linux/x86_64:**
-```
-> GOOS=linux GOARCH=amd64 go build -o fortihugorunner .
-```
-- **macOS/AMD64:**
-```
-> GOOS=darwin GOARCH=amd64 go build -o fortihugorunner .
-```
-- **Windows/x86_64:**
-```
-> GOOS=windows GOARCH=amd64 go build -o fortihugorunner.exe .
-
-```
-
-4. Update executable permissions if needed
-```
-> chmod +x fortihugorunner
-```
-
-5. (optional) Copy the executable into a directory in the system path. To list the path, run:
-
-- From a Linux or Mac terminal:
-```
-> echo $PATH 
-```
-
-- At the Windows Command Prompt:
-```
-> echo %PATH%
+# 5. Keep the tool up to date
+fortihugorunner update
 ```
 
 ---
 
-## Some Useful Pre-build Commands
+## Build from Source
 
-After adding a new dependency, run:
+**Prerequisites:** Go 1.23+ and Docker.
 
-```
-> go get <package>
-> go mod tidy
-```
-
-To update all packages to their latest versions:
-
-```
-> go get -u ./...
+```bash
+git clone https://github.com/FortinetCloudCSE/fortihugorunner.git
+cd fortihugorunner
+go mod download
 ```
 
-Formatting:
-
-```
-> go fmt ./...
-```
-
-Various function checks:
-
-```
-> go vet ./...
+Build for your current platform:
+```bash
+go build -o fortihugorunner .
+chmod +x fortihugorunner
 ```
 
-Run all unit tests:
+Cross-compile:
+```bash
+# Linux amd64
+GOOS=linux GOARCH=amd64 go build -o fortihugorunner-linux-amd64 .
+
+# macOS arm64
+GOOS=darwin GOARCH=arm64 go build -o fortihugorunner-darwin-arm64 .
+
+# Windows amd64
+GOOS=windows GOARCH=amd64 go build -o fortihugorunner-windows-amd64.exe .
+```
+
+Run tests:
+```bash
+go vet ./...
+go clean -testcache && go test ./...
+```
+
+Other useful commands:
+```bash
+go fmt ./...          # format code
+go get <package>      # add a dependency
+go mod tidy           # prune unused deps
+go get -u ./...       # update all deps to latest
+```
+
+---
+
+## Contributing
+
+### Branch model
 
 ```
-> go clean -testcache
-> go test ./..
+feature/<name>  →  PR to dev  →  merge to dev
+dev             →  PR to main →  merge to main  →  auto-release
 ```
+
+- All changes go through a PR. Direct pushes to `dev` and `main` are blocked.
+- PRs to `dev` require the **Build and Test** CI check to pass + 1 approving review.
+- PRs to `main` require the **Build and Release Binaries** CI check to pass + 1 approving review.
+
+### Automatic versioning
+
+Releases are created automatically when a PR is merged to `main`. The version number is derived from commit message prefixes following [Conventional Commits](https://www.conventionalcommits.org/):
+
+| Commit prefix | Version bump |
+|---------------|-------------|
+| `feat:` | minor (v0.7.x → v0.8.0) |
+| `fix:`, `chore:`, `docs:`, `ci:`, etc. | patch (v0.7.4 → v0.7.5) |
+| `BREAKING CHANGE:` or `feat!:` | major (v0.7.x → v1.0.0) |
+
+Example commit messages:
+```
+feat: add --timeout flag to launch-server
+fix: correct path separator on Windows
+chore(deps): upgrade golang.org/x/crypto to v0.53.0
+feat!: remove deprecated build-image --legacy flag
+```
+
+You do not need to edit `version/version.go` — the version is injected at build time by CI via `-ldflags`.
+
+### CI workflows
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `test.yml` | PR to `dev` or `main` | Build + vet + test gate |
+| `auto-release.yml` | Push to `main` | Compute next semver from commits, create tag |
+| `release.yml` | New `v*` tag | Build 6 platform binaries, publish GitHub release with CHANGELOG notes |
+| `pr-checklist.yml` | PR opened | Posts a review checklist comment |
