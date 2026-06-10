@@ -1,6 +1,8 @@
 package version
 
+// Version and Date are overridden at build time via -ldflags.
+// The defaults here are used only for local `go run` / `go build` without ldflags.
 var (
-	Version = "v0.7.5"
-	Date    = "2026-06-10"
+	Version = "dev"
+	Date    = "unknown"
 )
