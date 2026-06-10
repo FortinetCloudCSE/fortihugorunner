@@ -8,8 +8,6 @@ on:
       - '**.go'
       - 'go.mod'
       - 'go.sum'
-      - '.github/workflows/auto-release.yml'
-      - '.github/workflows/release.yml'
 
 permissions:
   contents: write
