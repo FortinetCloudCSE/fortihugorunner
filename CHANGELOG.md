@@ -1,6 +1,16 @@
 # Changelog
 
 
+## [v0.7.6] - 2026-06-24
+### Security
+- Migrated the Docker SDK off the frozen `github.com/docker/docker` module (permanently capped at v28.5.2 under its `+incompatible` versioning) onto the restructured Moby v29 client modules — `github.com/moby/moby/client` v0.5.0 and `github.com/moby/moby/api` v1.55.0. This removes `github.com/docker/docker` from the dependency graph entirely, closing all 5 remaining open Dependabot alerts (including the three documented as "upstream patch pending" in v0.7.5):
+  - GHSA-rg2x-37c3-w2rh / CVE-2026-42306 (High) — `docker cp` bind-mount redirection to host path
+  - GHSA-x86f-5xw2-fm2r / CVE-2026-41568 (High) — `PUT /containers/{id}/archive` executes container binary on host
+  - GHSA-x744-4wpc-v9h2 (High) — Moby AuthZ plugin bypass via oversized request bodies
+  - GHSA-vp62-88p7-qqf5 / CVE-2026-41567 (Medium) — `docker cp` arbitrary empty-file creation via symlink swap
+  - GHSA-pxq6-2prw-chj9 / CVE-2026-33997 (Medium) — off-by-one in plugin privilege validation
+- `govulncheck ./...` reports no known vulnerabilities after the migration.
+
 ## [v0.7.5] - 2026-06-10
 ### Security
 - Upgraded `go.opentelemetry.io/otel` family to v1.43.0 (fixes CVE-2026-39883, CVE-2026-24051, CVE-2026-39882)

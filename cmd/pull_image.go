@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"fortihugorunner/dockerinternal"
+	"github.com/moby/moby/client"
 	"github.com/spf13/cobra"
 )
 
@@ -60,7 +61,7 @@ Example:
 		}
 
 		// Tag the image
-		err = cli.ImageTag(context.Background(), fullUri, containerName)
+		_, err = cli.ImageTag(context.Background(), client.ImageTagOptions{Source: fullUri, Target: containerName})
 		if err != nil {
 			fmt.Printf("Error re-tagging image: %v\n", err)
 			os.Exit(1)

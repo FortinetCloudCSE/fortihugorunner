@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"fortihugorunner/dockerinternal"
 	"fortihugorunner/version"
+	"github.com/moby/moby/client"
 	"github.com/spf13/cobra"
 	"os"
 	"runtime"
@@ -49,7 +50,7 @@ func checkDockerRunning() error {
 		return fmt.Errorf("could not create Docker client: %w", err)
 	}
 
-	_, err = cli.Ping(ctx)
+	_, err = cli.Ping(ctx, client.PingOptions{})
 	if err != nil {
 		return err
 	}

@@ -26,6 +26,8 @@ FortiHugoRunner is a command-line tool that manages Hugo workshop development co
 
 > The tool reads `~/.docker/config.json` and honors the active Docker context automatically. Set `DOCKER_CONTEXT=<name>` or `DOCKER_HOST=…` to override.
 
+> **Keep your Docker Engine up to date.** FortiHugoRunner is only a *client* that talks to your local Docker daemon. Many Docker security advisories are fixed in the Docker Engine itself, not in this tool — so upgrading FortiHugoRunner does not patch your daemon. Run a current, supported version of Docker Engine / Docker Desktop and apply its updates to stay protected.
+
 Navigate to the [releases](https://github.com/FortinetCloudCSE/fortihugorunner/releases) page, right-click the binary for your OS/architecture, and click **Save Link As**.
 
 #### Determine your architecture
