@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 )
 
 // dockerContextInfo holds the minimal connection data we care about.

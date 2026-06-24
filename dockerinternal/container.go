@@ -6,17 +6,17 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/client"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/build"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/mount"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 )
 
 type ServerConfig struct {
@@ -58,7 +58,7 @@ func LocalImageCheck(image string, tag string, cli *client.Client, imageName str
 			fmt.Println("Failed to pull image:", err)
 		} else {
 			fmt.Println("Image updated successfully, retagging...")
-			err = cli.ImageTag(ctx, imageWithTag, imageName+":"+tag)
+			_, err = cli.ImageTag(ctx, client.ImageTagOptions{Source: imageWithTag, Target: imageName + ":" + tag})
 			if err != nil {
 				fmt.Printf("Error re-tagging image: %v\n", err)
 				return err
@@ -101,7 +101,7 @@ func getRemoteDigest(image string, tag string) (string, error) {
 
 func getLocalRepoDigest(cli *client.Client, image string) (string, error) {
 	ctx := context.Background()
-	imgInspect, _, err := cli.ImageInspectWithRaw(ctx, image)
+	imgInspect, err := cli.ImageInspect(ctx, image)
 	if err != nil {
 		return "", err
 	}
@@ -142,8 +142,7 @@ func EnsureImagePulled(cli client.ImageAPIClient, imageName string) error {
 
 	fmt.Printf("Ensuring required image %s is available...\n", imageName)
 
-	// Use the new `image.PullOptions` from `github.com/docker/docker/api/types/image`
-	out, err := cli.ImagePull(ctx, imageName, image.PullOptions{})
+	out, err := cli.ImagePull(ctx, imageName, client.ImagePullOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to pull required image %s: %w", imageName, err)
 	}
@@ -194,12 +193,12 @@ func BuildDockerImage(cli *client.Client, imageName string, target string, envAr
 	}
 
 	// Define build options
-	options := types.ImageBuildOptions{
+	options := client.ImageBuildOptions{
 		Tags:       []string{imageName},
 		Dockerfile: "Dockerfile",
 		Target:     target,
 		Remove:     true,
-		Version:    types.BuilderBuildKit,
+		Version:    build.BuilderBuildKit,
 		//CacheFrom: []string{"type=registry,ref=docker/dockerfile:1.5-labs"},
 		BuildArgs: map[string]*string{
 			"BUILDKIT_INLINE_CACHE": strPtr("1"),
@@ -209,7 +208,7 @@ func BuildDockerImage(cli *client.Client, imageName string, target string, envAr
 
 	// Execute Docker build
 	ctx := context.Background()
-	_, err = cli.BuildCachePrune(ctx, types.BuildCachePruneOptions{})
+	_, err = cli.BuildCachePrune(ctx, client.BuildCachePruneOptions{})
 
 	response, err := cli.ImageBuild(ctx, tarBuffer, options)
 	if err != nil {
@@ -257,31 +256,39 @@ func StartContainer(ctx context.Context, cli *client.Client, cfg ServerConfig) (
 		})
 	}
 
+	containerPort, err := network.ParsePort(cfg.ContainerPort + "/tcp")
+	if err != nil {
+		return "", fmt.Errorf("invalid container port %q: %w", cfg.ContainerPort, err)
+	}
+
 	containerConfig := &container.Config{
 		Image: cfg.DockerImage,
 		Cmd:   []string{"server", "--bind", "0.0.0.0"},
 		Tty:   true,
-		ExposedPorts: nat.PortSet{
-			nat.Port(cfg.ContainerPort + "/tcp"): struct{}{},
+		ExposedPorts: network.PortSet{
+			containerPort: struct{}{},
 		},
 	}
 	hostConfig := &container.HostConfig{
 		Mounts: mounts,
-		PortBindings: nat.PortMap{
-			nat.Port(cfg.ContainerPort + "/tcp"): []nat.PortBinding{
+		PortBindings: network.PortMap{
+			containerPort: []network.PortBinding{
 				{
-					HostIP:   "0.0.0.0",
+					HostIP:   netip.IPv4Unspecified(),
 					HostPort: cfg.HostPort,
 				},
 			},
 		},
 	}
 
-	created, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
+	created, err := cli.ContainerCreate(ctx, client.ContainerCreateOptions{
+		Config:     containerConfig,
+		HostConfig: hostConfig,
+	})
 	if err != nil {
 		return "", fmt.Errorf("container create error: %w", err)
 	}
-	if err := cli.ContainerStart(ctx, created.ID, container.StartOptions{}); err != nil {
+	if _, err := cli.ContainerStart(ctx, created.ID, client.ContainerStartOptions{}); err != nil {
 		return "", fmt.Errorf("container start error: %w", err)
 	}
 	fmt.Printf("Started container: %s\n", created.ID)
@@ -289,7 +296,7 @@ func StartContainer(ctx context.Context, cli *client.Client, cfg ServerConfig) (
 }
 
 func AttachContainer(ctx context.Context, cli *client.Client, containerID string) error {
-	opts := container.AttachOptions{
+	opts := client.ContainerAttachOptions{
 		Stream: true,
 		Stdout: true,
 		Stderr: true,
@@ -311,11 +318,11 @@ func AttachContainer(ctx context.Context, cli *client.Client, containerID string
 func StopAndRemoveContainer(cli *client.Client, containerID string) {
 	fmt.Printf("Stopping container: %s\n", containerID)
 	timeout := 10
-	stopOpts := container.StopOptions{Timeout: &timeout}
-	if err := cli.ContainerStop(context.Background(), containerID, stopOpts); err != nil {
+	stopOpts := client.ContainerStopOptions{Timeout: &timeout}
+	if _, err := cli.ContainerStop(context.Background(), containerID, stopOpts); err != nil {
 		fmt.Printf("Error stopping container %s: %v\n", containerID, err)
 	}
-	if err := cli.ContainerRemove(context.Background(), containerID, container.RemoveOptions{Force: true}); err != nil {
+	if _, err := cli.ContainerRemove(context.Background(), containerID, client.ContainerRemoveOptions{Force: true}); err != nil {
 		fmt.Printf("Error removing container %s: %v\n", containerID, err)
 	}
 }
