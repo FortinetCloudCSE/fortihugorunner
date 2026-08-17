@@ -53,7 +53,7 @@ CHANGELOG.md               — hand-maintained; `## [vX.Y.Z] - YYYY-MM-DD` + ###
 Jenkinsfile                — FortiDevSec scan stage + an inherited workshop-repo stage that scans
                              content/*/ (no content/ dir exists here, so it is a no-op warning)
 fdevsec.yaml               — FortiDevSec scanner config (sast/secret/sca/iac/container)
-docs/plans/                — plan + log files per the global planning workflow; tracked in git
+docs/plans/                — plan + log files, `NNNN_` prefixed, per the global planning workflow; tracked in git
 .github/workflows/
   test.yml                 — build + vet + test; pull_request to dev/main only, with a paths filter
   auto-release.yml         — on push to main: derive semver bump from commit subjects, tag
@@ -102,6 +102,8 @@ This repo has **no `.gitignore` at all**, so `docs/` is tracked normally; `git c
 This is the opposite of the Hugo workshop repos, where `.gitignore` lists `docs/` (line 3 in both `k8s-101-workshop` and `ai-101`) because Hugo publishes the built site there and the template upgrade tool deletes it. That is why those repos need plans in `plans/`.
 
 **Keep `docs/plans/` as-is here — do not rename it to `plans/`.** The workshop-repo rename does not apply, and renaming would orphan a teammate's committed files.
+
+**Naming is `NNNN_YYYY-MM-DD_<git-username>_<slug>.md`** with an optional `.log.md` and `.spec.md`. `NNNN` is a per-repo sequence (`0001` and `0002` are taken). The log is optional — write one only for multi-session or wide-blast-radius work. On completing a plan, promote its durable decisions into this file as gotchas and leave the plan file to decay; there is deliberately no `docs/adr/` layer. `docs/plans/README.md` has the full rules.
 
 ## Environment Variables
 
