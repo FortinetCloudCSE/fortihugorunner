@@ -1,7 +1,7 @@
 # Session Log: Security Dependency Upgrades — CVE Remediation
 Date: 2026-06-10
 Owner: Jeff Kopko
-Related Plan: docs/plans/2026-06-10_Jeff-Kopko_security-dep-upgrades.md
+Related Plan: docs/plans/0001_2026-06-10_Jeff-Kopko_security-dep-upgrades.md
 
 ## Milestones
 - [x] Dependencies upgraded

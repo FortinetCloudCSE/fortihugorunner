@@ -1,7 +1,7 @@
 # Session Log: Migrate Docker SDK to Moby v29 client — CVE Remediation
 Date: 2026-06-24
 Owner: Robert Reris
-Related Plan: docs/plans/2026-06-24_Robert-Reris_docker-moby-v29-migration.md
+Related Plan: docs/plans/0002_2026-06-24_Robert-Reris_docker-moby-v29-migration.md
 
 ## Milestones
 - [x] v29 client/api surface probed for all call sites

@@ -97,7 +97,7 @@ go build -ldflags "-X fortihugorunner/version.Version=v0.7.6 -X fortihugorunner/
 
 ## Repo Conventions — `docs/plans/` Stays Put
 
-This repo has **no `.gitignore` at all**, so `docs/` is tracked normally; `git check-ignore docs/plans` exits 1. Four plan/log files are committed under `docs/plans/`, including a pair authored by a teammate (Robert Reris — `2026-06-24_Robert-Reris_docker-moby-v29-migration.{md,log.md}`, the v0.7.6 Moby migration).
+This repo has **no `.gitignore` at all**, so `docs/` is tracked normally; `git check-ignore docs/plans` exits 1. Four plan/log files are committed under `docs/plans/`, including a pair authored by a teammate (Robert Reris — `0002_2026-06-24_Robert-Reris_docker-moby-v29-migration.{md,log.md}`, the v0.7.6 Moby migration).
 
 This is the opposite of the Hugo workshop repos, where `.gitignore` lists `docs/` (line 3 in both `k8s-101-workshop` and `ai-101`) because Hugo publishes the built site there and the template upgrade tool deletes it. That is why those repos need plans in `plans/`.
 

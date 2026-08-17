@@ -2,8 +2,8 @@
 Date: 2026-06-10
 Owner: Jeff Kopko
 Slug: security-dep-upgrades
-Plan File: docs/plans/2026-06-10_Jeff-Kopko_security-dep-upgrades.md
-Log File: docs/plans/2026-06-10_Jeff-Kopko_security-dep-upgrades.log.md
+Plan File: docs/plans/0001_2026-06-10_Jeff-Kopko_security-dep-upgrades.md
+Log File: docs/plans/0001_2026-06-10_Jeff-Kopko_security-dep-upgrades.log.md
 
 ## Goal
 Upgrade dependencies in `go.mod` to remediate all Dependabot security alerts where a patch is available. Document what cannot yet be fixed (no patch released) and verify the build still compiles and passes tests.
