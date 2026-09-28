@@ -11,6 +11,10 @@ on:
 
 permissions:
   contents: write
+  actions: write  # needed to dispatch release.yml below — a tag pushed with the
+                   # default GITHUB_TOKEN does not trigger release.yml's own
+                   # `push: tags:` event (GitHub's anti-recursion rule for
+                   # Actions-authored pushes), so this workflow triggers it explicitly
 
 jobs:
   tag-and-release:
@@ -85,3 +89,15 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "$NEXT"
           git push origin "$NEXT"
+
+      - name: Trigger release build
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NEXT="${{ steps.next.outputs.version }}"
+          # The tag push above does NOT trigger release.yml's `push: tags:` event
+          # (GitHub skips event-triggered workflows for a push made with the
+          # default GITHUB_TOKEN). Dispatch it explicitly instead, at that exact
+          # tag ref, so it builds and releases the version just tagged.
+          gh workflow run release.yml --ref "$NEXT"

@@ -3,7 +3,16 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'  # Triggers only on version tags
+      - 'v*'  # Triggers only on version tags, but NOT for a tag pushed by the default
+               # GITHUB_TOKEN (e.g. auto-release.yml) — GitHub's anti-recursion rule
+               # silently skips event-triggered workflows for Actions-authored pushes.
+               # auto-release.yml compensates by explicitly dispatching this workflow
+               # (see workflow_dispatch below) right after it pushes the tag.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and release (e.g. v1.2.3) — only needed for a manual run; auto-release.yml passes --ref instead.'
+        required: false
 
 jobs:
   build:
@@ -27,14 +36,34 @@ jobs:
             goarch: 386
 
     steps:
+      # Resolves the tag to build/release regardless of how this run started:
+      # a real tag push (github.ref_name is the tag), auto-release.yml's explicit
+      # `gh workflow run release.yml --ref vX.Y.Z` dispatch (same — ref_name is the
+      # tag it was dispatched against), or a manual workflow_dispatch where someone
+      # left "main" selected as the run's ref and typed the tag into the input instead.
+      - name: Resolve tag
+        id: tag
+        run: |
+          TAG="${{ inputs.tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          if [ -z "$TAG" ]; then
+            echo "::error::No tag resolved — pass the 'tag' input or run this from a tag ref."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
 
       - name: Extract release notes from CHANGELOG
         if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
         id: changelog
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${{ steps.tag.outputs.tag }}"
           # Extract the block for this version: from the ## [vX.Y.Z] header to the next ## header
           NOTES=$(awk "/^## \[${TAG}\]/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md)
           # Write to file to avoid multiline env-var quoting issues
@@ -53,12 +82,13 @@ jobs:
             BIN_NAME="${BIN_NAME}.exe"
           fi
           BUILD_DATE=$(date -u +%Y-%m-%d)
-          LDFLAGS="-X fortihugorunner/version.Version=${{ github.ref_name }} -X fortihugorunner/version.Date=${BUILD_DATE}"
+          LDFLAGS="-X fortihugorunner/version.Version=${{ steps.tag.outputs.tag }} -X fortihugorunner/version.Date=${BUILD_DATE}"
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags "$LDFLAGS" -o "$BIN_NAME"
 
       - name: Upload binary to release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.tag.outputs.tag }}
           files: fortihugorunner-*
           body_path: ${{ steps.changelog.outputs.notes_file || '' }}
         env:
