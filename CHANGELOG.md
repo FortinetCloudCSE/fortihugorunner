@@ -1,6 +1,12 @@
 # Changelog
 
 
+## [v0.8.0] - 2026-09-28
+### Added
+- New `install-docker` command: installs a free, lightweight, Docker-API-compatible engine when none is found — Docker Engine CE on Linux (a pinned, checksum-verified `get.docker.com`), Colima on macOS (via Homebrew), and Docker Engine CE inside WSL2 on Windows. Deliberately never installs Docker Desktop, whose free-use terms exclude larger organizations. `--dry-run` prints exactly what would run; `--yes` (or `FORTIHUGORUNNER_AUTO_INSTALL_DOCKER=1`) skips the confirmation prompt.
+- Any command now offers to run `install-docker` automatically when no Docker-compatible engine is found at all (not when one exists but isn't running — that keeps today's plain-error behavior). Opt out entirely with the new persistent `--no-install-docker` flag.
+- Verified end-to-end on Linux in an isolated, throwaway privileged container (install, the no-systemd `dockerd` fallback, idempotency, `--dry-run`, declining the prompt). Windows and macOS paths are implemented and cross-compiled; Windows verification against a real disposable cloud VM and macOS verification against real Apple hardware are tracked separately — see `docs/plans/0004_2026-09-28_Jeff-Kopko_auto-install-docker.md`.
+
 ## [v0.7.7] - 2026-09-28
 ### Fixed
 - `launch-server --pull-latest` compared the wrong local image reference when deciding whether to pull and retag: it inspected the registry-qualified tag (`public.ecr.aws/.../fortinet-hugo:latest`), which any prior pull under that full name keeps fresh, instead of the short tag (`fortinet-hugo:latest`) that actually gets started. A stale short tag could read as "already up to date" and never get retagged. `getLocalRepoDigest` now inspects the short tag while still matching its `RepoDigests` against the registry-qualified prefix (Docker stores digests per image object, keyed by the full name, regardless of which local tag you inspect with).

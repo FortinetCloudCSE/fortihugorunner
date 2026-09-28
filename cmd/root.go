@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"fortihugorunner/dockerinternal"
+	"fortihugorunner/dockerinternal/install"
 	"fortihugorunner/version"
 	"github.com/moby/moby/client"
 	"github.com/spf13/cobra"
@@ -12,6 +13,7 @@ import (
 )
 
 var rootVersion bool
+var noInstallDocker bool
 
 var rootCmd = &cobra.Command{
 	Use:   "fortihugorunner",
@@ -21,15 +23,29 @@ var rootCmd = &cobra.Command{
 		DisableDefaultCmd: true,
 	},
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		err := checkDockerRunning()
-		if err != nil {
-			cmd.SilenceErrors = true
-			cmd.SilenceUsage = true
-			fmt.Fprintf(os.Stderr, "\nReceived the error below. For troubleshooting help, head here: https://docs.docker.com/engine/daemon/troubleshoot/\n\n")
-			return err
+		// install-docker handles its own detection/offer flow; don't
+		// double-prompt or block it from running when Docker is absent.
+		if cmd.Name() == "install-docker" {
+			return nil
 		}
-		return nil
 
+		err := checkDockerRunning()
+		if err == nil {
+			return nil
+		}
+
+		if !noInstallDocker && dockerinternal.DetectDocker() == dockerinternal.NotInstalled {
+			if offerAndInstallDocker() {
+				if retryErr := checkDockerRunning(); retryErr == nil {
+					return nil
+				}
+			}
+		}
+
+		cmd.SilenceErrors = true
+		cmd.SilenceUsage = true
+		fmt.Fprintf(os.Stderr, "\nReceived the error below. For troubleshooting help, head here: https://docs.docker.com/engine/daemon/troubleshoot/\n\n")
+		return err
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if rootVersion {
@@ -41,6 +57,27 @@ var rootCmd = &cobra.Command{
 		}
 		cmd.Help()
 	},
+}
+
+// offerAndInstallDocker prompts (unless FORTIHUGORUNNER_AUTO_INSTALL_DOCKER=1
+// is set) before installing anything — see install.Install's package doc.
+// Returns true only if an install was attempted and reported success.
+func offerAndInstallDocker() bool {
+	yes := os.Getenv("FORTIHUGORUNNER_AUTO_INSTALL_DOCKER") == "1"
+	fmt.Println("\nNo Docker-compatible engine was found on this system.")
+	if !yes {
+		fmt.Print("Install a free, lightweight one now (see 'fortihugorunner install-docker --dry-run' for exactly what that runs)? [y/N] ")
+		var answer string
+		fmt.Scanln(&answer)
+		if answer != "y" && answer != "Y" && answer != "yes" {
+			return false
+		}
+	}
+	if err := install.Install(context.Background(), install.Options{}); err != nil {
+		fmt.Printf("Docker install failed: %v\n", err)
+		return false
+	}
+	return true
 }
 
 func checkDockerRunning() error {
@@ -67,4 +104,5 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&rootVersion, "version", "v", false, "fortihugorunner version information")
+	rootCmd.PersistentFlags().BoolVar(&noInstallDocker, "no-install-docker", false, "Never offer to install Docker automatically when it's missing; keep today's plain error.")
 }

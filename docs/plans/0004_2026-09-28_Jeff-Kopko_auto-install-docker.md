@@ -3,15 +3,20 @@
 Date: 2026-09-28
 Owner: Jeff Kopko
 Slug: auto-install-docker
-Status: Proposed
+Status: Approved
 Supersedes: none
 Superseded-By: none
 Plan File: docs/plans/0004_2026-09-28_Jeff-Kopko_auto-install-docker.md
-Log File: docs/plans/0004_2026-09-28_Jeff-Kopko_auto-install-docker.log.md (open on approval — cross-OS, privilege-escalating installs are exactly the "wide blast radius" case this repo's log-file rule calls for)
+Log File: docs/plans/0004_2026-09-28_Jeff-Kopko_auto-install-docker.log.md
 
-**This plan is plan-only, not implemented.** Requested as "create a plan to add install of
-lightweight free docker per system in fortihugorunner utilities capabilities" — no code
-changes in this commit.
+Approved 2026-09-28. Testing scope decision (owner-approved): Linux verified end-to-end in
+an isolated, throwaway privileged container (never against this host's own working Docker
+setup); Windows verified end-to-end against a real, disposable cloud VM (Azure or GCP —
+already-authenticated sessions, cheap, fast); macOS/Colima implemented and cross-compiled
+but **not** run end-to-end in this pass — real macOS testing needs an AWS EC2 Mac instance
+(24h/~$25+ minimum dedicated-host commitment, possible quota approval, AWS SSO not yet
+logged in this session) and is deliberately deferred to its own explicitly-approved pass
+rather than bundled in here.
 
 ## Goal
 Today, every `fortihugorunner` command (even `version`) fails with a bare Docker-daemon
@@ -68,7 +73,7 @@ Only `NotInstalled` triggers the new install-offer flow.
 |----|--------|-----|
 | Linux | Docker Engine CE (official `get.docker.com`, pinned) | Free, officially supported, no VM layer needed, matches what CI runners already use |
 | macOS | Colima (via Homebrew) + `colima start` | Free, open-source, lightweight (Lima), already a first-class supported context per `CLAUDE.md`'s v0.7.4 note — avoids any Docker Desktop licensing question entirely |
-| Windows | WSL2 + Docker Engine CE **inside** the default WSL2 distro | Reuses this repo's existing `IsWSL2`/path-translation code; avoids Docker Desktop's Windows service + licensing. If WSL2 itself isn't enabled, print manual enable-WSL2 instructions and stop — enabling WSL2 can require a reboot and is out of scope for an unattended install |
+| Windows | WSL2 + Docker Engine CE **inside** the default WSL2 distro, Unix socket only | Reuses this repo's existing `IsWSL2`/path-translation code; avoids Docker Desktop's Windows service + licensing. If WSL2 itself isn't enabled, print manual enable-WSL2 instructions and stop — enabling WSL2 can require a reboot and is out of scope for an unattended install. **Does not** bridge the daemon out to the native Windows binary over TCP or SSH — see Decisions & Commentary — so the guidance is to run `fortihugorunner` from inside WSL2 itself |
 
 Homebrew itself may be absent on a fresh Mac — detect and offer to install Homebrew first
 (also confirmed, also pinned) as a prerequisite step, not silently.
@@ -89,38 +94,84 @@ resolution in `dockerinternal/docker_client.go` — reuse it, don't add a second
 then re-`Ping`. Failure at any step falls back to today's plain error + troubleshooting link,
 never a partial silent state.
 
-## Plan (for the approved implementation — not started)
-- [ ] `dockerinternal.DetectDocker()` + a `DockerState` enum, unit-tested with a fake PATH/
-      filesystem (no real installs in unit tests).
-- [ ] `dockerinternal/install/` package: one file per engine (`docker_ce_linux.go`,
-      `colima_darwin.go`, `docker_ce_wsl2.go`), each pinned to a specific version/checksum,
-      each independently testable for "what command would run" without actually running it.
-- [ ] `cmd/install_docker.go`: new command, `--engine`/`--yes` flags, README section,
-      CHANGELOG entry (per this repo's "Add a command" convention in `CLAUDE.md`).
-- [ ] Wire the confirm-then-install flow into `root.go`'s `PersistentPreRunE` for the
-      `NotInstalled` case only; `InstalledNotRunning`/`Running` behavior unchanged.
-- [ ] Manual verification matrix (can't fully automate a real install in shared CI): a clean
-      Linux container/VM with no Docker, a clean macOS VM with no Docker/Homebrew, and a
-      Windows/WSL2 VM with WSL2 enabled but no Docker inside it. Record results in the log
-      file.
+## Plan
+- [x] `dockerinternal.DetectDocker()` + `DockerState` enum, per-OS `platformDockerPresent`
+      (`detect_{linux,darwin,windows}.go`, build-tag gated like the rest of this repo's
+      OS-specific code).
+- [x] `dockerinternal/install/` package: `install.go` (shared `Options`, pinned script
+      URL/checksum), `linux.go` (Docker Engine CE), `darwin.go` (Colima via Homebrew),
+      `windows.go` (same pinned Linux install run inside WSL2). Every step supports
+      `Options.DryRun` to print exactly what would run without executing it.
+- [x] `cmd/install_docker.go`: new command, `--yes`/`--dry-run` flags plus
+      `FORTIHUGORUNNER_AUTO_INSTALL_DOCKER=1`.
+- [x] Wired the confirm-then-install flow into `root.go`'s `PersistentPreRunE`, gated by
+      `--no-install-docker`, for the `NotInstalled` case only; `InstalledNotRunning`/`Running`
+      behavior unchanged.
+- [x] `go build`/`vet`/`test` clean; cross-compiled all release targets
+      (linux/{amd64,arm64}, darwin/{amd64,arm64}, windows/amd64).
+- [x] Linux verified end-to-end in an isolated, throwaway `--privileged` container (never
+      against this host's own Docker) — see log for the full run: detection, the pinned
+      script, the no-systemd `dockerd` fallback, a successful retry into the original
+      command, actual `docker ps`/`docker pull` functionality afterward, idempotency on
+      re-run, `--dry-run` output, and declining the prompt.
+- [ ] Windows verified end-to-end against a real, disposable cloud VM (Azure or GCP) —
+      owner-approved next step.
+- [ ] macOS/Colima: code + cross-compile only this pass — real hardware verification needs
+      an AWS EC2 Mac instance (24h/~$25+ minimum), deliberately deferred to its own
+      explicitly-approved pass.
+- [ ] README section + CHANGELOG entry for `install-docker` (per this repo's "Add a command"
+      convention).
 - [ ] Decide whether to add a narrowly-scoped CI job (a Docker-free Linux runner image) to
-      cover at least the Linux path automatically going forward, given the "manual
-      verification" gap this otherwise leaves permanently.
+      cover at least the Linux path automatically going forward, given the manual-testing
+      gap this otherwise leaves permanently for Windows/macOS.
+
+## Decisions & Commentary
+- **Rejected exposing dockerd over TCP to bridge WSL2's socket to native Windows.** The
+  first draft had `windows.go` configure dockerd inside WSL2 to also listen on
+  `tcp://127.0.0.1:2375`, relying on WSL2's default NAT localhost-forwarding so
+  `fortihugorunner.exe` could reach it. This session's own safety classifier flagged the
+  change as weakening TLS/auth, correctly: an unauthenticated Docker API is root-equivalent
+  access to anyone who can reach it, and that risk doesn't disappear just because the
+  forwarding is loopback-scoped by default (a mirrored-networking WSL2 config can expose
+  more). Rewrote to install Docker Engine CE inside WSL2 using only its standard Unix
+  socket, and print instructions to run `fortihugorunner` from inside WSL2 itself instead —
+  no new network-facing attack surface, at the cost of the native Windows binary not being
+  directly usable against the WSL2-installed engine.
+- **Left the CA-cert-repair fix undone rather than working around the classifier a second
+  time.** Same session, same class of block (touching HTTP-client/TLS-adjacent code), this
+  time for a legitimate repair (retry the download once after a best-effort `apt-get install
+  ca-certificates`) rather than a real weakening. The tool's own guidance is explicit: don't
+  retry the same outcome through another tool or approach — so this is left as a documented
+  gap (see Risks) for a human to implement directly, rather than routed around.
+- **Reused the same pinned Linux install script inside WSL2** (`windows.go` embeds the exact
+  same URL+checksum constants as `linux.go`, now hoisted to `install.go`) rather than writing
+  a second copy — one source of truth for "how we install Docker Engine CE on Linux,"
+  whether that Linux is bare metal or a WSL2 distro.
 
 ## Files Changed
-(none yet — plan only)
+- `dockerinternal/detect.go` (new), `detect_linux.go`, `detect_darwin.go`,
+  `detect_windows.go` (new)
+- `dockerinternal/install/install.go`, `linux.go`, `darwin.go`, `windows.go` (new)
+- `cmd/install_docker.go` (new)
+- `cmd/root.go` (wired the offer-and-install flow, `--no-install-docker` flag)
 
 ## Session Summary
-(implementation not started — see Plan above)
+See the log file — implementation and Linux end-to-end verification are done; Windows
+cloud-VM verification is the immediate next step, macOS hardware verification is deferred.
 
 ## Promotion
-- [ ] `Decisions & Commentary` walked
-- [ ] Durable facts promoted to `CLAUDE.md`
-- [ ] `Status:` set to `Complete`
+- [x] `Decisions & Commentary` walked
+- [ ] Durable facts promoted to `CLAUDE.md` (once Windows verification lands too)
+- [ ] `Status:` set to `Complete` (once Windows verification lands too)
 
 ## Follow-ups
-- [ ] Owner approves this plan (`Status: Proposed` → `Approved`) and picks an implementation
-      session/worktree before any code lands.
+- [ ] Windows cloud-VM verification (in progress).
+- [ ] macOS/Colima real-hardware verification, as its own explicitly-approved pass (AWS SSO
+      login + EC2 Mac instance, 24h/~$25+ minimum commitment).
+- [ ] Consider a best-effort CA-cert repair (`apt-get install ca-certificates` + retry) for
+      the narrow case of a Linux host with a missing/stale trust store before the HTTPS
+      script download — attempted once, blocked by this session's own TLS-related safety
+      classifier; revisit with a human reviewing the diff directly rather than an agent.
 
 ## Risks / Open Questions
 - **Docker Desktop licensing is exactly why this plan avoids it as a default**: Docker
@@ -146,3 +197,17 @@ never a partial silent state.
 - **Uninstall story is out of scope for v1** — this plan only installs; removing what it
   installed (if a user wants to switch engines or remove it later) is a follow-up, not
   bundled in to avoid scope creep on an already cross-cutting change.
+- **A host with a missing or stale CA trust store fails the HTTPS script download** —
+  found during Linux verification (a minimal `ubuntu:24.04` test image lacking
+  `ca-certificates`), not fixed: the natural fix (best-effort `apt-get install
+  ca-certificates` + retry) touches TLS-adjacent code and was blocked by this session's own
+  safety classifier. In practice this is narrow — real distros and cloud VM images ship
+  working CA certs — but it's a real, if rare, failure mode worth a human directly reviewing
+  a fix for, rather than an agent.
+- **Windows connectivity is deliberately incomplete, not a gap**: `fortihugorunner.exe`
+  (native Windows) cannot use a WSL2-only Docker socket without either exposing the API over
+  TCP or setting up SSH — both rejected as unnecessary new attack surface (see Decisions).
+  The practical result is that Windows users need to run `fortihugorunner` from inside WSL2
+  itself to use the engine this installs, which the tool prints after installing. A future,
+  separately-scoped pass could revisit an SSH-based `docker context` if that limitation
+  proves too rough in practice.

@@ -13,6 +13,7 @@ FortiHugoRunner is a command-line tool that manages Hugo workshop development co
   - [pull-image](#pull-image)
   - [build-image](#build-image)
   - [launch-server](#launch-server)
+  - [install-docker](#install-docker)
   - [update](#update)
 - [Typical Workflow](#typical-workflow)
 - [Build from Source](#build-from-source)
@@ -164,6 +165,27 @@ fortihugorunner launch-server \
 | `--registry` | `public.ecr.aws/k4n6m5h8/` | Registry to check `--docker-image` freshness against (only used by `--pull-latest`) |
 
 Once running, open `http://localhost:<host-port>` in your browser. The server reloads automatically when files in `--watch-dir` change.
+
+---
+
+### install-docker
+
+Installs a free, lightweight, Docker-API-compatible engine when none is found: Docker Engine CE on Linux, [Colima](https://github.com/abiosoft/colima) on macOS, and Docker Engine CE inside WSL2 on Windows. Never installs Docker Desktop — its free-use terms exclude larger organizations. Runs automatically (with a confirmation prompt) the first time any other command finds no Docker at all, or can be run directly:
+
+```bash
+fortihugorunner install-docker --dry-run   # see exactly what would run, without running it
+fortihugorunner install-docker             # prompts before installing
+fortihugorunner install-docker --yes       # skip the prompt (CI / scripted use)
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Print the commands that would run, without executing anything |
+| `--yes` | `false` | Skip the confirmation prompt. Also settable via `FORTIHUGORUNNER_AUTO_INSTALL_DOCKER=1` |
+
+The automatic offer (on any command, when no Docker engine is found at all — not when one is present but just not running) can be disabled with the persistent `--no-install-docker` flag, which restores the previous plain-error behavior.
+
+On Windows, this installs Docker Engine CE *inside* WSL2, not on the Windows side — `fortihugorunner.exe` can't safely reach a WSL2-only Docker socket without exposing the API over the network, which this tool won't do. Run `fortihugorunner` from inside WSL2 itself to use the engine it installs there.
 
 ---
 
