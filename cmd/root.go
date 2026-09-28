@@ -29,6 +29,8 @@ var rootCmd = &cobra.Command{
 			return nil
 		}
 
+		maybeAutoUpdate(cmd.Name())
+
 		err := checkDockerRunning()
 		if err == nil {
 			return nil
@@ -105,4 +107,5 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&rootVersion, "version", "v", false, "fortihugorunner version information")
 	rootCmd.PersistentFlags().BoolVar(&noInstallDocker, "no-install-docker", false, "Never offer to install Docker automatically when it's missing; keep today's plain error.")
+	rootCmd.PersistentFlags().BoolVar(&noAutoUpdate, "no-auto-update", false, "Never check for or offer a fortihugorunner update automatically.")
 }

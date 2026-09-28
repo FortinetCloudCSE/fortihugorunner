@@ -1,6 +1,13 @@
 # Changelog
 
 
+## [v0.9.0] - 2026-09-28
+### Added
+- Every command now checks for a newer fortihugorunner release automatically, at most once every 24 hours, and offers to install it before continuing — no need to remember to run `update` yourself. Never blocks the command: a GitHub API failure, an unwritable cache directory, an unparsable dev version, or declining the prompt all fail open and continue on the current version.
+- New `--no-auto-update` persistent flag and `FORTIHUGORUNNER_NO_AUTO_UPDATE=1` disable the automatic check entirely; `FORTIHUGORUNNER_AUTO_UPDATE=1` skips the confirmation prompt (for CI / scripted use). Skipped for the `update` and `version` commands themselves.
+- On accept, re-execs the updated binary with the exact original arguments so the command you actually ran completes transparently on the new version.
+- Verified end-to-end against the real, live GitHub releases (not a mock): declining continues normally with the check still cached; a second run inside the 24h window makes no network call; `--no-auto-update` makes no network call and writes no cache; `FORTIHUGORUNNER_AUTO_UPDATE=1` performed a real download-and-install and re-exec. See `docs/plans/0005_2026-09-28_Jeff-Kopko_auto-update.md`.
+
 ## [v0.8.0] - 2026-09-28
 ### Added
 - New `install-docker` command: installs a free, lightweight, Docker-API-compatible engine when none is found — Docker Engine CE on Linux (a pinned, checksum-verified `get.docker.com`), Colima on macOS (via Homebrew), and Docker Engine CE inside WSL2 on Windows. Deliberately never installs Docker Desktop, whose free-use terms exclude larger organizations. `--dry-run` prints exactly what would run; `--yes` (or `FORTIHUGORUNNER_AUTO_INSTALL_DOCKER=1`) skips the confirmation prompt.

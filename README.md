@@ -197,6 +197,14 @@ Updates the `fortihugorunner` binary in place to the latest GitHub release. If t
 fortihugorunner update
 ```
 
+**Automatic updates**: every other command also checks for a newer release automatically, at most once every 24 hours, and offers to install it before continuing — you don't have to remember to run `update` yourself. It never blocks your command: a network/API failure, a missing cache directory, or declining the prompt all just continue on the current version.
+
+| Flag / env var | Description |
+|------|-------------|
+| `--no-auto-update` | Never check for or offer an update automatically (persistent flag, works on any command) |
+| `FORTIHUGORUNNER_AUTO_UPDATE=1` | Skip the confirmation prompt when an automatic update is offered (for CI / scripted use) |
+| `FORTIHUGORUNNER_NO_AUTO_UPDATE=1` | Same as `--no-auto-update`, as an environment variable |
+
 ---
 
 ## Typical Workflow
