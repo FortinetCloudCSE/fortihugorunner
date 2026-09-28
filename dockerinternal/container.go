@@ -37,15 +37,23 @@ func LocalImageCheck(image string, tag string, cli *client.Client, imageName str
 
 	ctx := context.Background()
 	imageWithTag := image + ":" + tag
+	localRef := imageName + ":" + tag
 
-	fmt.Printf("Checking for %s local/remote repo digest match...\n", imageWithTag)
+	fmt.Printf("Checking for %s local/remote repo digest match...\n", localRef)
 	remoteDigest, err := getRemoteDigest(image, tag)
 	if err != nil {
 		return err
 	}
 	fmt.Println("Remote Digest:", remoteDigest)
 
-	localDigest, err := getLocalRepoDigest(cli, image)
+	// Inspect the SHORT tag (imageName:tag) — that is the reference StartContainer
+	// actually runs. Docker stores RepoDigests per underlying image object, always
+	// keyed by the full registry-qualified name regardless of which local tag you
+	// inspect with, so this still finds the right digest to compare against `image`.
+	// Inspecting `image` (the registry-qualified ref) instead is the bug this fixes:
+	// that ref gets refreshed by any prior pull under the full name, so it can read
+	// "up to date" while the short tag callers actually run is still stale.
+	localDigest, err := getLocalRepoDigest(cli, localRef, image)
 	if err != nil {
 		fmt.Println("Local image not found or no digest found.")
 		localDigest = ""
@@ -99,20 +107,24 @@ func getRemoteDigest(image string, tag string) (string, error) {
 	return fetchManifestDigestWithToken(manifestURL, token)
 }
 
-func getLocalRepoDigest(cli *client.Client, image string) (string, error) {
+// getLocalRepoDigest inspects inspectRef (the local tag actually used to run the
+// container) and looks for a RepoDigests entry matching digestPrefix (the
+// registry-qualified image name, since Docker always stores RepoDigests that way
+// regardless of which local tag you inspect with).
+func getLocalRepoDigest(cli *client.Client, inspectRef string, digestPrefix string) (string, error) {
 	ctx := context.Background()
-	imgInspect, err := cli.ImageInspect(ctx, image)
+	imgInspect, err := cli.ImageInspect(ctx, inspectRef)
 	if err != nil {
 		return "", err
 	}
 
 	for _, digest := range imgInspect.RepoDigests {
-		if strings.HasPrefix(digest, image+"@") {
+		if strings.HasPrefix(digest, digestPrefix+"@") {
 			return strings.SplitN(digest, "@", 2)[1], nil
 		}
 	}
 
-	return "", fmt.Errorf("no matching RepoDigest found for image: %s", image)
+	return "", fmt.Errorf("no matching RepoDigest found for image: %s", inspectRef)
 }
 
 func extractBranchByStage(dockerfile string, stage string) (string, error) {

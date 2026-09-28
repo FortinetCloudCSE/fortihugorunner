@@ -46,6 +46,7 @@ Example:
 			MountToml:     getFlagBool(cmd, "mount-toml"),
 			PullLatest:    getFlagBool(cmd, "pull-latest"),
 		}
+		registry := getFlagString(cmd, "registry")
 
 		// Ensure the watch directory is absolute.
 		abs, err := filepath.Abs(cfg.WatchDir)
@@ -61,23 +62,24 @@ Example:
 		}
 
 		// Check local Docker image up to date
-		fmt.Printf("PullLatest flag set to: %t", cfg.PullLatest)
-		if cfg.PullLatest == true {
-			cseImages := []string{"fortinet-hugo", "hugotester"}
+		fmt.Printf("PullLatest flag set to: %t\n", cfg.PullLatest)
+		if cfg.PullLatest {
 			imageName := strings.Split(cfg.DockerImage, ":")[0]
-			ecrReg := "public.ecr.aws/k4n6m5h8/"
 
-			for _, s := range cseImages {
-				if imageName == s {
-					image := ecrReg + s
-					tag := "latest"
-					err = dockerinternal.LocalImageCheck(image, tag, cli, s)
-					if err != nil {
-						fmt.Printf("Error in LocalImageCheck: %v", err)
-						log.Fatal(err)
-					}
-					break
+			if dockerinternal.KnownImageName(imageName) {
+				image := registry + imageName
+				tag := "latest"
+				err = dockerinternal.LocalImageCheck(image, tag, cli, imageName)
+				if err != nil {
+					fmt.Printf("Error in LocalImageCheck: %v", err)
+					log.Fatal(err)
 				}
+			} else {
+				fmt.Printf(
+					"Skipping freshness check: %q is not a fortihugorunner-managed image "+
+						"(known: fortinet-hugo, hugotester). Starting it as-is.\n",
+					imageName,
+				)
 			}
 		}
 
@@ -115,4 +117,5 @@ func init() {
 	launchServerCmd.Flags().String("watch-dir", ".", "Directory to watch for file changes")
 	launchServerCmd.Flags().Bool("mount-toml", false, "Use '--mount-toml=true' to mount the hugo.toml in your workshop directory and watch for updates.")
 	launchServerCmd.Flags().Bool("pull-latest", true, "Check local Docker image is up-to-date. If not, download latest. Use '--pull-latest=false' to disable.")
+	launchServerCmd.Flags().String("registry", dockerinternal.DefaultRegistry, "ECR registry to check --docker-image freshness against (only used when --docker-image is a fortihugorunner-managed image name).")
 }

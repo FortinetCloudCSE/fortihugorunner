@@ -160,7 +160,8 @@ fortihugorunner launch-server \
 | `--container-port` | — | Container port to expose (e.g. `1313`) |
 | `--watch-dir` | — | Path to the workshop directory to mount into the container |
 | `--mount-toml` | `false` | Mount `hugo.toml` from `--watch-dir` into the container |
-| `--pull-latest` | `false` | Pull the latest version of `--docker-image` before starting |
+| `--pull-latest` | `true` | Compare `--docker-image` against the registry and pull+retag if stale, before starting. Use `--pull-latest=false` to skip. Only applies when `--docker-image`'s name is `fortinet-hugo` or `hugotester` — anything else starts as-is, with a message saying why. |
+| `--registry` | `public.ecr.aws/k4n6m5h8/` | Registry to check `--docker-image` freshness against (only used by `--pull-latest`) |
 
 Once running, open `http://localhost:<host-port>` in your browser. The server reloads automatically when files in `--watch-dir` change.
 

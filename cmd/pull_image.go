@@ -28,22 +28,14 @@ Example:
 		ecrReg, _ := cmd.Flags().GetString("registry")
 
 		// Map provided argument to actual Docker build target
-		envMap := map[string]string{
-			"author-dev": "prod",
-			"admin-dev":  "dev",
-		}
-		env, exists := envMap[envArg]
+		env, exists := dockerinternal.EnvToTarget[envArg]
 		if !exists {
 			fmt.Println("Error: env must be one of either author-dev or admin-dev.")
 			os.Exit(1)
 		}
 
 		// Determine the corresponding container name
-		containerMap := map[string]string{
-			"prod": "fortinet-hugo",
-			"dev":  "hugotester",
-		}
-		containerName := containerMap[env]
+		containerName := dockerinternal.TargetToImageName[env]
 
 		// Initialize Docker client
 		cli, err := dockerinternal.NewDockerClient()
@@ -74,5 +66,5 @@ Example:
 func init() {
 	rootCmd.AddCommand(pullImageCmd)
 	pullImageCmd.Flags().String("env", "author-dev", "Environment. author-dev (prod) creates a fortinet-hugo image. admin-dev (dev) creates a hugotester image.")
-	pullImageCmd.Flags().String("registry", "public.ecr.aws/k4n6m5h8/", "ECR registry.")
+	pullImageCmd.Flags().String("registry", dockerinternal.DefaultRegistry, "ECR registry.")
 }

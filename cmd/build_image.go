@@ -25,22 +25,14 @@ Example:
 		hugoVersion, _ := cmd.Flags().GetString("hugo-version")
 
 		// Map provided argument to actual Docker build target
-		envMap := map[string]string{
-			"author-dev": "prod",
-			"admin-dev":  "dev",
-		}
-		env, exists := envMap[envArg]
+		env, exists := dockerinternal.EnvToTarget[envArg]
 		if !exists {
 			fmt.Println("Error: env must be one of either author-dev or admin-dev.")
 			os.Exit(1)
 		}
 
 		// Determine the corresponding container name
-		containerMap := map[string]string{
-			"prod": "fortinet-hugo",
-			"dev":  "hugotester",
-		}
-		containerName := containerMap[env]
+		containerName := dockerinternal.TargetToImageName[env]
 
 		// Initialize Docker client
 		cli, err := dockerinternal.NewDockerClient()

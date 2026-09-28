@@ -1,6 +1,11 @@
 # Changelog
 
 
+## [v0.7.7] - 2026-09-28
+### Fixed
+- `launch-server --pull-latest` compared the wrong local image reference when deciding whether to pull and retag: it inspected the registry-qualified tag (`public.ecr.aws/.../fortinet-hugo:latest`), which any prior pull under that full name keeps fresh, instead of the short tag (`fortinet-hugo:latest`) that actually gets started. A stale short tag could read as "already up to date" and never get retagged. `getLocalRepoDigest` now inspects the short tag while still matching its `RepoDigests` against the registry-qualified prefix (Docker stores digests per image object, keyed by the full name, regardless of which local tag you inspect with).
+- `launch-server`'s `--pull-latest` freshness check used its own hardcoded copy of the known-image list and registry (`fortinet-hugo`/`hugotester`, `public.ecr.aws/k4n6m5h8/`), separate from `pull-image`/`build-image`'s maps, and silently skipped the check for any other `--docker-image` name with no indication why. The three commands now share one map (`dockerinternal.EnvToTarget` / `TargetToImageName`), `launch-server` takes a `--registry` flag matching `pull-image`'s, and an unrecognized `--docker-image` now prints why the freshness check was skipped instead of skipping silently.
+
 ## [v0.7.6] - 2026-06-24
 ### Security
 - Migrated the Docker SDK off the frozen `github.com/docker/docker` module (permanently capped at v28.5.2 under its `+incompatible` versioning) onto the restructured Moby v29 client modules — `github.com/moby/moby/client` v0.5.0 and `github.com/moby/moby/api` v1.55.0. This removes `github.com/docker/docker` from the dependency graph entirely, closing all 5 remaining open Dependabot alerts (including the three documented as "upstream patch pending" in v0.7.5):
