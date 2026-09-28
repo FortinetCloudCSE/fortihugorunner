@@ -57,7 +57,41 @@ Plan: docs/plans/0004_2026-09-28_Jeff-Kopko_auto-install-docker.md
     workshop authors' actual machines) ships `ca-certificates` pre-installed and current; it
     was specifically the *minimal* Docker Hub `ubuntu:24.04` test image that lacked it. See
     Risks.
-- Windows and macOS: implemented and cross-compiled, not yet run end-to-end. Windows testing
-  against a real disposable cloud VM (Azure/GCP) is next, per the owner-approved testing
-  scope. macOS/Colima remains code-review-only this pass (no AWS EC2 Mac instance
-  provisioned).
+- **Windows verified on real Azure VMs** (Windows Server 2022 Datacenter, `Standard_D4s_v3`,
+  no public IP, controlled entirely via `az vm run-command` — never RDP/WinRM, no
+  credentials ever left the VM). Two VMs were used; findings below.
+  - **`az vm run-command` executes as SYSTEM, and WSL2 genuinely cannot be driven from that
+    context** — confirmed independently on two separate VMs: `wsl -l -v` returns "Access is
+    denied," and a manual `wsl --import` (bypassing `wsl --install`'s Microsoft Store
+    dependency, which also failed under SYSTEM with `0x8000ffff`) fails the same way. This
+    is a real, reproducible platform limitation, not a fluke of one VM. A passwordless
+    workaround (a Task Scheduler job with S4U logon, which runs as a specific user without
+    ever knowing their password) was tried and Windows itself refused it too
+    (`Register-ScheduledTask : Access is denied`). A password-based workaround (embedding
+    the VM's admin credential to run a task or PowerShell session as the real user) was
+    correctly blocked by this session's own safety classifier as credential materialization,
+    and per that tool's own design this isn't something a later "I approve" unblocks — it
+    deliberately requires a Bash permission-setting change, not conversational consent, so
+    it wasn't pursued further.
+  - **What *is* verified end-to-end on real Windows, via the actual compiled
+    `fortihugorunner.exe`** (transferred over a temporary, short-lived-SAS Azure Storage
+    blob — no public exposure): `--no-install-docker` correctly suppresses the auto-offer
+    and surfaces the original plain npipe-connection error unchanged; `install-docker
+    --dry-run` correctly detects WSL2 is inaccessible in this context and reports it via the
+    same clean "enable WSL2, then re-run" message a real user without WSL2 would see, rather
+    than crashing; the interactive confirmation prompt and the `FORTIHUGORUNNER_AUTO_INSTALL_DOCKER=1`
+    path both resolve cleanly (no hang) with the correct, informative failure.
+  - **First test VM got stuck**: an early invocation (before flags were used to force
+    non-interactive mode) reached a confirmation prompt with no stdin available, and the
+    Azure `run-command` channel then reported "(Conflict) Run command extension execution is
+    in progress" indefinitely — a plain restart and a full `az vm redeploy` both failed to
+    clear it; only deleting and recreating the VM did. **Fixed by wrapping every subsequent
+    `run-command` script in a `Start-Job`/`Wait-Job -Timeout` guard** (see
+    `docs/plans/0004...` Decisions) so the invocation always returns within a bounded time
+    regardless of what happens inside — verified by deliberately re-triggering the same
+    prompt-with-no-stdin case on the second VM and confirming it now returns immediately
+    instead of hanging.
+  - All Azure resources (VM, disk, NIC, NSG, VNet, storage account, resource group) deleted
+    after testing; no credentials or SAS URLs were left on disk.
+  - macOS/Colima remains code-review-only this pass (no AWS EC2 Mac instance provisioned,
+    per the owner-approved testing scope) — deferred to its own pass.

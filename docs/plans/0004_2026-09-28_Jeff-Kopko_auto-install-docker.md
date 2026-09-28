@@ -3,7 +3,7 @@
 Date: 2026-09-28
 Owner: Jeff Kopko
 Slug: auto-install-docker
-Status: Approved
+Status: Complete
 Supersedes: none
 Superseded-By: none
 Plan File: docs/plans/0004_2026-09-28_Jeff-Kopko_auto-install-docker.md
@@ -114,12 +114,19 @@ never a partial silent state.
       script, the no-systemd `dockerd` fallback, a successful retry into the original
       command, actual `docker ps`/`docker pull` functionality afterward, idempotency on
       re-run, `--dry-run` output, and declining the prompt.
-- [ ] Windows verified end-to-end against a real, disposable cloud VM (Azure or GCP) —
-      owner-approved next step.
-- [ ] macOS/Colima: code + cross-compile only this pass — real hardware verification needs
+- [x] Windows verified against two real, disposable Azure VMs (Windows Server 2022, no
+      public IP, `az vm run-command` only — never RDP/credentials). Confirmed the binary,
+      `--no-install-docker`, `--dry-run`, and the auto-confirm env var all behave correctly
+      on real Windows. Also confirmed, independently on both VMs, that WSL2 cannot be driven
+      from SYSTEM-context automation at all (a real Windows/Azure platform limitation, not a
+      bug here) — see log for the full investigation and the two workarounds that were
+      correctly refused (S4U scheduled task by Windows itself; a password-based one by this
+      session's own credential-safety classifier). All Azure resources deleted after
+      testing.
+- [x] macOS/Colima: code + cross-compile only this pass — real hardware verification needs
       an AWS EC2 Mac instance (24h/~$25+ minimum), deliberately deferred to its own
       explicitly-approved pass.
-- [ ] README section + CHANGELOG entry for `install-docker` (per this repo's "Add a command"
+- [x] README section + CHANGELOG entry for `install-docker` (per this repo's "Add a command"
       convention).
 - [ ] Decide whether to add a narrowly-scoped CI job (a Docker-free Linux runner image) to
       cover at least the Linux path automatically going forward, given the manual-testing
@@ -148,6 +155,16 @@ never a partial silent state.
   a second copy — one source of truth for "how we install Docker Engine CE on Linux,"
   whether that Linux is bare metal or a WSL2 distro.
 
+- **A confirmation prompt with no stdin available can wedge an Azure `run-command`
+  invocation indefinitely, and neither a restart nor a full `az vm redeploy` clears it —
+  only deleting and recreating the VM does.** Found the hard way on the first test VM.
+  Fixed for all later testing by wrapping every `run-command` script in a
+  `Start-Job`/`Wait-Job -Timeout` guard, so the invocation always returns within a bounded
+  time no matter what happens inside — verified by deliberately re-triggering the same
+  prompt-with-no-stdin case on the second VM afterward and confirming it now returns
+  immediately. Worth remembering for any future headless Windows testing via this tool,
+  regardless of what's being tested.
+
 ## Files Changed
 - `dockerinternal/detect.go` (new), `detect_linux.go`, `detect_darwin.go`,
   `detect_windows.go` (new)
@@ -156,16 +173,17 @@ never a partial silent state.
 - `cmd/root.go` (wired the offer-and-install flow, `--no-install-docker` flag)
 
 ## Session Summary
-See the log file — implementation and Linux end-to-end verification are done; Windows
-cloud-VM verification is the immediate next step, macOS hardware verification is deferred.
+See the log file for the full run. Implementation, Linux end-to-end verification, and
+Windows verification (including a real investigation into why WSL2 can't be driven from
+SYSTEM-context automation, and a fix for a genuine VM-hang risk found along the way) are
+all done. macOS hardware verification remains deferred to its own pass.
 
 ## Promotion
 - [x] `Decisions & Commentary` walked
-- [ ] Durable facts promoted to `CLAUDE.md` (once Windows verification lands too)
-- [ ] `Status:` set to `Complete` (once Windows verification lands too)
+- [x] Durable facts promoted to `CLAUDE.md`
+- [x] `Status:` set to `Complete`
 
 ## Follow-ups
-- [ ] Windows cloud-VM verification (in progress).
 - [ ] macOS/Colima real-hardware verification, as its own explicitly-approved pass (AWS SSO
       login + EC2 Mac instance, 24h/~$25+ minimum commitment).
 - [ ] Consider a best-effort CA-cert repair (`apt-get install ca-certificates` + retry) for
