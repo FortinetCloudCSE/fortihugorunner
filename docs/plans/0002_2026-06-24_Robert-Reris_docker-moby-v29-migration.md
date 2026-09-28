@@ -2,8 +2,8 @@
 Date: 2026-06-24
 Owner: Robert Reris
 Slug: docker-moby-v29-migration
-Plan File: docs/plans/2026-06-24_Robert-Reris_docker-moby-v29-migration.md
-Log File: docs/plans/2026-06-24_Robert-Reris_docker-moby-v29-migration.log.md
+Plan File: docs/plans/0002_2026-06-24_Robert-Reris_docker-moby-v29-migration.md
+Log File: docs/plans/0002_2026-06-24_Robert-Reris_docker-moby-v29-migration.log.md
 
 ## Goal
 Close the 5 remaining open Dependabot alerts, all filed against `github.com/docker/docker`, by migrating to the restructured Moby v29 client modules. Verify the build compiles, vets clean, passes tests, and that `github.com/docker/docker` is fully removed from the module graph.

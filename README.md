@@ -13,6 +13,7 @@ FortiHugoRunner is a command-line tool that manages Hugo workshop development co
   - [pull-image](#pull-image)
   - [build-image](#build-image)
   - [launch-server](#launch-server)
+  - [install-docker](#install-docker)
   - [update](#update)
 - [Typical Workflow](#typical-workflow)
 - [Build from Source](#build-from-source)
@@ -160,9 +161,31 @@ fortihugorunner launch-server \
 | `--container-port` | — | Container port to expose (e.g. `1313`) |
 | `--watch-dir` | — | Path to the workshop directory to mount into the container |
 | `--mount-toml` | `false` | Mount `hugo.toml` from `--watch-dir` into the container |
-| `--pull-latest` | `false` | Pull the latest version of `--docker-image` before starting |
+| `--pull-latest` | `true` | Compare `--docker-image` against the registry and pull+retag if stale, before starting. Use `--pull-latest=false` to skip. Only applies when `--docker-image`'s name is `fortinet-hugo` or `hugotester` — anything else starts as-is, with a message saying why. |
+| `--registry` | `public.ecr.aws/k4n6m5h8/` | Registry to check `--docker-image` freshness against (only used by `--pull-latest`) |
 
 Once running, open `http://localhost:<host-port>` in your browser. The server reloads automatically when files in `--watch-dir` change.
+
+---
+
+### install-docker
+
+Installs a free, lightweight, Docker-API-compatible engine when none is found: Docker Engine CE on Linux, [Colima](https://github.com/abiosoft/colima) on macOS, and Docker Engine CE inside WSL2 on Windows. Never installs Docker Desktop — its free-use terms exclude larger organizations. Runs automatically (with a confirmation prompt) the first time any other command finds no Docker at all, or can be run directly:
+
+```bash
+fortihugorunner install-docker --dry-run   # see exactly what would run, without running it
+fortihugorunner install-docker             # prompts before installing
+fortihugorunner install-docker --yes       # skip the prompt (CI / scripted use)
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Print the commands that would run, without executing anything |
+| `--yes` | `false` | Skip the confirmation prompt. Also settable via `FORTIHUGORUNNER_AUTO_INSTALL_DOCKER=1` |
+
+The automatic offer (on any command, when no Docker engine is found at all — not when one is present but just not running) can be disabled with the persistent `--no-install-docker` flag, which restores the previous plain-error behavior.
+
+On Windows, this installs Docker Engine CE *inside* WSL2, not on the Windows side — `fortihugorunner.exe` can't safely reach a WSL2-only Docker socket without exposing the API over the network, which this tool won't do. Run `fortihugorunner` from inside WSL2 itself to use the engine it installs there.
 
 ---
 
@@ -173,6 +196,14 @@ Updates the `fortihugorunner` binary in place to the latest GitHub release. If t
 ```bash
 fortihugorunner update
 ```
+
+**Automatic updates**: every other command also checks for a newer release automatically, at most once every 24 hours, and offers to install it before continuing — you don't have to remember to run `update` yourself. It never blocks your command: a network/API failure, a missing cache directory, or declining the prompt all just continue on the current version.
+
+| Flag / env var | Description |
+|------|-------------|
+| `--no-auto-update` | Never check for or offer an update automatically (persistent flag, works on any command) |
+| `FORTIHUGORUNNER_AUTO_UPDATE=1` | Skip the confirmation prompt when an automatic update is offered (for CI / scripted use) |
+| `FORTIHUGORUNNER_NO_AUTO_UPDATE=1` | Same as `--no-auto-update`, as an environment variable |
 
 ---
 

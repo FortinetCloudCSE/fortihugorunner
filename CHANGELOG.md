@@ -1,6 +1,24 @@
 # Changelog
 
 
+## [v0.9.0] - 2026-09-28
+### Added
+- Every command now checks for a newer fortihugorunner release automatically, at most once every 24 hours, and offers to install it before continuing — no need to remember to run `update` yourself. Never blocks the command: a GitHub API failure, an unwritable cache directory, an unparsable dev version, or declining the prompt all fail open and continue on the current version.
+- New `--no-auto-update` persistent flag and `FORTIHUGORUNNER_NO_AUTO_UPDATE=1` disable the automatic check entirely; `FORTIHUGORUNNER_AUTO_UPDATE=1` skips the confirmation prompt (for CI / scripted use). Skipped for the `update` and `version` commands themselves.
+- On accept, re-execs the updated binary with the exact original arguments so the command you actually ran completes transparently on the new version.
+- Verified end-to-end against the real, live GitHub releases (not a mock): declining continues normally with the check still cached; a second run inside the 24h window makes no network call; `--no-auto-update` makes no network call and writes no cache; `FORTIHUGORUNNER_AUTO_UPDATE=1` performed a real download-and-install and re-exec. See `docs/plans/0005_2026-09-28_Jeff-Kopko_auto-update.md`.
+
+## [v0.8.0] - 2026-09-28
+### Added
+- New `install-docker` command: installs a free, lightweight, Docker-API-compatible engine when none is found — Docker Engine CE on Linux (a pinned, checksum-verified `get.docker.com`), Colima on macOS (via Homebrew), and Docker Engine CE inside WSL2 on Windows. Deliberately never installs Docker Desktop, whose free-use terms exclude larger organizations. `--dry-run` prints exactly what would run; `--yes` (or `FORTIHUGORUNNER_AUTO_INSTALL_DOCKER=1`) skips the confirmation prompt.
+- Any command now offers to run `install-docker` automatically when no Docker-compatible engine is found at all (not when one exists but isn't running — that keeps today's plain-error behavior). Opt out entirely with the new persistent `--no-install-docker` flag.
+- Verified end-to-end on Linux in an isolated, throwaway privileged container (install, the no-systemd `dockerd` fallback, idempotency, `--dry-run`, declining the prompt). Windows and macOS paths are implemented and cross-compiled; Windows verification against a real disposable cloud VM and macOS verification against real Apple hardware are tracked separately — see `docs/plans/0004_2026-09-28_Jeff-Kopko_auto-install-docker.md`.
+
+## [v0.7.7] - 2026-09-28
+### Fixed
+- `launch-server --pull-latest` compared the wrong local image reference when deciding whether to pull and retag: it inspected the registry-qualified tag (`public.ecr.aws/.../fortinet-hugo:latest`), which any prior pull under that full name keeps fresh, instead of the short tag (`fortinet-hugo:latest`) that actually gets started. A stale short tag could read as "already up to date" and never get retagged. `getLocalRepoDigest` now inspects the short tag while still matching its `RepoDigests` against the registry-qualified prefix (Docker stores digests per image object, keyed by the full name, regardless of which local tag you inspect with).
+- `launch-server`'s `--pull-latest` freshness check used its own hardcoded copy of the known-image list and registry (`fortinet-hugo`/`hugotester`, `public.ecr.aws/k4n6m5h8/`), separate from `pull-image`/`build-image`'s maps, and silently skipped the check for any other `--docker-image` name with no indication why. The three commands now share one map (`dockerinternal.EnvToTarget` / `TargetToImageName`), `launch-server` takes a `--registry` flag matching `pull-image`'s, and an unrecognized `--docker-image` now prints why the freshness check was skipped instead of skipping silently.
+
 ## [v0.7.6] - 2026-06-24
 ### Security
 - Migrated the Docker SDK off the frozen `github.com/docker/docker` module (permanently capped at v28.5.2 under its `+incompatible` versioning) onto the restructured Moby v29 client modules — `github.com/moby/moby/client` v0.5.0 and `github.com/moby/moby/api` v1.55.0. This removes `github.com/docker/docker` from the dependency graph entirely, closing all 5 remaining open Dependabot alerts (including the three documented as "upstream patch pending" in v0.7.5):

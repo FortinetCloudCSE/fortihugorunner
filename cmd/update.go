@@ -17,6 +17,41 @@ import (
 
 const repoSlug = "FortinetCloudCSE/fortihugorunner"
 
+// detectLatestRelease returns the latest GitHub release for repoSlug if it's
+// newer than current, or nil if current is already the latest (or no release
+// was found at all). Shared by the explicit `update` command and the
+// automatic update check in cmd/autoupdate.go so there's one source of truth
+// for "is an update available."
+func detectLatestRelease(current semver.Version) (*selfupdate.Release, error) {
+	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
+	if err != nil {
+		return nil, err
+	}
+	rel, ok, err := updater.DetectLatest(repoSlug)
+	if err != nil {
+		return nil, err
+	}
+	if !ok || rel.Version.Equals(current) {
+		return nil, nil
+	}
+	return rel, nil
+}
+
+// applyUpdate downloads and installs rel over the currently running
+// executable, in place. Shared by the explicit `update` command and the
+// automatic update check.
+func applyUpdate(rel *selfupdate.Release) error {
+	cmdPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("could not get executable path: %w", err)
+	}
+	updater, err := selfupdate.NewUpdater(selfupdate.Config{})
+	if err != nil {
+		return err
+	}
+	return updater.UpdateTo(rel, cmdPath)
+}
+
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update fortihugorunner to the latest version.",
@@ -55,22 +90,25 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("Erroring parsing version: %w", err)
 		}
-		updater, err := selfupdate.NewUpdater(selfupdate.Config{})
-		latest, err := updater.UpdateSelf(v, repoSlug)
 
+		rel, err := detectLatestRelease(v)
 		if err != nil {
 			return fmt.Errorf("update failed: %w", err)
 		}
 
-		if latest.Version.Equals(v) {
+		if rel == nil {
 			fmt.Fprintf(os.Stdout, "You're already running the latest version (%s)\n", version.Version)
 			os.Stdout.Sync()
 			os.Exit(0)
-		} else {
-			fmt.Fprintf(os.Stdout, "Successfully updated to version %s!\n", latest.Version)
-			os.Stdout.Sync()
-			os.Exit(0)
 		}
+
+		if err := applyUpdate(rel); err != nil {
+			return fmt.Errorf("update failed: %w", err)
+		}
+
+		fmt.Fprintf(os.Stdout, "Successfully updated to version %s!\n", rel.Version)
+		os.Stdout.Sync()
+		os.Exit(0)
 
 		return nil
 	},
